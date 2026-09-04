@@ -213,42 +213,42 @@ export const AIAssistantPage = () => {
   };
 
   return (
-    <div className={`space-y-6 font-['Roboto',sans-serif] ${isFullScreen ? 'fixed inset-0 z-50 p-4 md:p-6 bg-slate-950/95 backdrop-blur-2xl overflow-y-auto' : ''}`}>
+    <div className={`space-y-3 sm:space-y-5 font-['Roboto',sans-serif] ${isFullScreen ? 'fixed inset-0 z-50 p-3 sm:p-6 bg-slate-950/95 backdrop-blur-2xl overflow-y-auto' : ''}`}>
       {/* Top Banner & Exam Solver Wizard Gateway */}
-      <div className="p-6 rounded-3xl neu-flat flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-3.5 sm:p-6 rounded-3xl neu-flat flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <div className="flex items-center space-x-2 text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">
-            <Sparkles className="w-4 h-4 text-amber-400" />
+          <div className="flex items-center space-x-2 text-[10px] sm:text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>Gemini 2.0 Flash • Repository-Aware RAG</span>
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
+          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2 sm:gap-3">
             <span>AI Exam Assistant & Solver</span>
             {isFullScreen && (
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
-                Focus Screen Mode
+              <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                Focus Mode
               </span>
             )}
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
             Contextually answers syllabus questions grounded in {college?.code || 'University'} past papers & lecture notes.
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="w-full sm:w-auto grid grid-cols-2 sm:flex sm:items-center gap-2 sm:space-x-3">
           <button
             onClick={() => setIsFullScreen(!isFullScreen)}
             id="toggle-ai-focus-screen-btn"
-            className="px-4 py-2.5 rounded-xl neu-button text-xs font-bold text-slate-200 hover:text-white flex items-center space-x-2 border border-slate-700/60"
+            className="px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl neu-button text-xs font-bold text-slate-200 hover:text-white flex items-center justify-center space-x-1.5 border border-slate-700/60 cursor-pointer"
             title={isFullScreen ? 'Exit Separate Focus Screen' : 'Open in Separate Screen'}
           >
             {isFullScreen ? (
               <>
-                <Minimize2 className="w-4 h-4 text-brand-400" />
+                <Minimize2 className="w-3.5 h-3.5 text-brand-400" />
                 <span>Exit Fullscreen</span>
               </>
             ) : (
               <>
-                <Maximize2 className="w-4 h-4 text-brand-400" />
+                <Maximize2 className="w-3.5 h-3.5 text-brand-400" />
                 <span>Separate Screen</span>
               </>
             )}
@@ -257,54 +257,55 @@ export const AIAssistantPage = () => {
           <button
             onClick={() => setIsSolverOpen(true)}
             id="launch-paper-solver-btn"
-            className="px-5 py-2.5 rounded-xl neu-button text-xs font-bold text-white shadow-glow flex items-center space-x-2 border-amber-500/40"
+            className="px-3 py-2 sm:px-5 sm:py-2.5 rounded-xl neu-button text-xs font-bold text-white shadow-glow flex items-center justify-center space-x-1.5 border-amber-500/40 cursor-pointer"
           >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Interactive Paper Solver</span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Interactive Solver</span>
           </button>
         </div>
       </div>
 
       {/* RAG Repository Search Quick Query Bar */}
-      <div className="p-4 rounded-2xl neu-flat">
+      <div className="p-3 sm:p-4 rounded-2xl neu-flat">
         <form onSubmit={handleRagSearch} className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5 sm:top-3" />
             <input
               type="text"
               id="rag-search-input"
               value={ragQuery}
               onChange={(e) => setRagQuery(e.target.value)}
-              placeholder="RAG Search: e.g. 'Explain OSI model layers and checksum from past exam papers'..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+              placeholder="RAG Search: e.g. 'Explain OSI layers and checksum'..."
+              className="w-full pl-9 pr-3 py-2 sm:py-2.5 rounded-xl neu-pressed text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
             />
           </div>
           <button
             type="submit"
             disabled={isSearching}
-            className="px-5 py-2.5 rounded-xl neu-button text-xs font-bold text-brand-300 hover:text-white flex items-center space-x-1.5"
+            className="px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl neu-button text-xs font-bold text-brand-300 hover:text-white flex items-center space-x-1.5 cursor-pointer"
           >
             {isSearching ? (
-              <Cpu className="w-4 h-4 animate-spin text-brand-400" />
+              <Cpu className="w-3.5 h-3.5 animate-spin text-brand-400" />
             ) : (
-              <Search className="w-4 h-4" />
+              <Search className="w-3.5 h-3.5" />
             )}
-            <span>RAG Query</span>
+            <span className="hidden sm:inline">RAG Query</span>
+            <span className="sm:hidden">Query</span>
           </button>
         </form>
 
         {/* RAG Results Display */}
         {ragResults && (
-          <div className="mt-4 p-4 rounded-xl neu-pressed animate-fade-in space-y-3">
+          <div className="mt-3 p-3.5 rounded-xl neu-pressed animate-fade-in space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-brand-300 uppercase tracking-wider">
+              <span className="text-[10px] sm:text-[11px] font-bold text-brand-300 uppercase tracking-wider">
                 Grounded Repository Synthesis ({ragResults.totalSourcesFound} Sources)
               </span>
               <div className="flex items-center space-x-2">
                 <TextToSpeechButton text={ragResults.answer} />
                 <button
                   onClick={() => dispatch(clearRagResults())}
-                  className="text-[10px] text-slate-500 hover:text-slate-300"
+                  className="text-[10px] text-slate-500 hover:text-slate-300 cursor-pointer"
                 >
                   Close
                 </button>
@@ -315,15 +316,13 @@ export const AIAssistantPage = () => {
               <MarkdownMessage content={ragResults.answer} />
             </div>
 
-
-
             {ragResults.citations?.length > 0 && (
-              <div className="pt-2 border-t border-slate-700/30 flex flex-wrap gap-2">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">Citations:</span>
+              <div className="pt-2 border-t border-slate-700/30 flex flex-wrap gap-1.5">
+                <span className="text-[9px] font-bold text-slate-500 uppercase">Citations:</span>
                 {ragResults.citations.map((c) => (
                   <span
                     key={c.id}
-                    className="px-2 py-0.5 rounded-md neu-button text-[10px] text-slate-300"
+                    className="px-2 py-0.5 rounded-md neu-button text-[9px] text-slate-300"
                   >
                     {c.title}
                   </span>
@@ -335,33 +334,41 @@ export const AIAssistantPage = () => {
       </div>
 
       {/* Mobile Sessions Toggle Bar */}
-      <div className="lg:hidden">
+      <div className="lg:hidden flex items-center gap-2">
         <button
           type="button"
           onClick={() => setShowMobileSessions(!showMobileSessions)}
-          className="w-full py-2.5 px-4 rounded-2xl neu-flat text-xs font-bold text-slate-300 flex items-center justify-between"
+          className="flex-1 py-2 px-3 rounded-2xl neu-flat text-xs font-bold text-slate-300 flex items-center justify-between cursor-pointer"
         >
-          <span className="flex items-center space-x-2">
-            <MessageSquare className="w-3.5 h-3.5 text-brand-400" />
-            <span>Chat Sessions ({sessions.length})</span>
+          <span className="flex items-center space-x-2 truncate">
+            <MessageSquare className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
+            <span className="truncate">Sessions ({sessions.length})</span>
           </span>
-          {showMobileSessions ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+          {showMobileSessions ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+        </button>
+        <button
+          type="button"
+          onClick={handleCreateNewChat}
+          className="p-2 rounded-2xl neu-button text-brand-400 hover:text-white flex items-center justify-center cursor-pointer"
+          title="New Chat Session"
+        >
+          <Plus className="w-4 h-4" />
         </button>
       </div>
 
       {/* Main Two-Column Chat Experience with Expanded Viewport */}
-      <div className={`grid grid-cols-1 lg:grid-cols-4 gap-6 ${isFullScreen ? 'min-h-[calc(100vh-160px)]' : 'min-h-[680px]'}`}>
+      <div className={`grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 ${isFullScreen ? 'min-h-[calc(100vh-160px)]' : 'min-h-[480px] sm:min-h-[680px]'}`}>
         {/* Left Column: Private Sessions Sidebar (Collapsible on mobile) */}
-        <div className={`lg:col-span-1 rounded-3xl neu-flat p-4 flex flex-col justify-between space-y-3 ${showMobileSessions ? 'block' : 'hidden lg:flex'}`}>
+        <div className={`lg:col-span-1 rounded-3xl neu-flat p-3 sm:p-4 flex flex-col justify-between space-y-3 ${showMobileSessions ? 'block animate-fade-in' : 'hidden lg:flex'}`}>
           <div>
-            <div className="flex items-center justify-between mb-3 px-1">
+            <div className="flex items-center justify-between mb-2 sm:mb-3 px-1">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                 Chat Sessions
               </span>
               <button
                 onClick={handleCreateNewChat}
                 id="new-ai-chat-btn"
-                className="p-1.5 rounded-lg neu-button text-slate-300 hover:text-white"
+                className="p-1.5 rounded-lg neu-button text-slate-300 hover:text-white cursor-pointer"
                 title="Create New Session"
               >
                 <Plus className="w-4 h-4" />
@@ -369,7 +376,7 @@ export const AIAssistantPage = () => {
             </div>
 
             {/* Sessions List */}
-            <div className="space-y-1.5 max-h-[520px] overflow-y-auto pr-1">
+            <div className="space-y-1.5 max-h-48 lg:max-h-[520px] overflow-y-auto pr-1">
               {sessions.map((sess) => {
                 const isActive = activeSessionId === sess.id;
                 return (
@@ -402,19 +409,19 @@ export const AIAssistantPage = () => {
         </div>
 
         {/* Right Column: Active Conversation Feed (Maximized Chat Area) */}
-        <div className={`lg:col-span-3 rounded-3xl neu-flat p-6 flex flex-col justify-between ${isFullScreen ? 'min-h-[calc(100vh-180px)]' : 'min-h-[660px]'}`}>
+        <div className={`lg:col-span-3 rounded-3xl neu-flat p-3 sm:p-6 flex flex-col justify-between ${isFullScreen ? 'min-h-[calc(100vh-180px)]' : 'min-h-[460px] sm:min-h-[660px]'}`}>
           {/* Messages Feed - Expansive Height */}
-          <div className={`space-y-4 overflow-y-auto pr-2 ${isFullScreen ? 'max-h-[calc(100vh-320px)] min-h-[500px]' : 'max-h-[560px] min-h-[460px]'}`}>
+          <div className={`space-y-3 sm:space-y-4 overflow-y-auto pr-1 sm:pr-2 ${isFullScreen ? 'max-h-[calc(100vh-320px)] min-h-[400px]' : 'max-h-[500px] sm:max-h-[560px] min-h-[320px] sm:min-h-[460px]'}`}>
             {messages.length === 0 && (
-              <div className="text-center py-20 space-y-4">
-                <div className="w-16 h-16 rounded-2xl neu-button mx-auto flex items-center justify-center text-brand-400">
-                  <Bot className="w-8 h-8" />
+              <div className="text-center py-8 sm:py-16 space-y-3 sm:space-y-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl neu-button mx-auto flex items-center justify-center text-brand-400">
+                  <Bot className="w-6 h-6 sm:w-8 sm:h-8" />
                 </div>
-                <h3 className="text-lg font-black text-white">Ask Studix Exam AI</h3>
-                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                <h3 className="text-base sm:text-lg font-black text-white">Ask Studix Exam AI</h3>
+                <p className="text-[11px] sm:text-xs text-slate-400 max-w-md mx-auto">
                   Ask questions, request step-by-step derivations, or click below for quick prompt formats:
                 </p>
-                <div className="flex flex-wrap justify-center gap-2 pt-2">
+                <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 pt-1">
                   {[
                     'Explain OSI layers with standard diagrams',
                     'Derive Go-Back-N protocol mechanism (10 Marks)',
@@ -423,7 +430,7 @@ export const AIAssistantPage = () => {
                     <button
                       key={i}
                       onClick={() => setInputMessage(sug)}
-                      className="px-3 py-1.5 rounded-xl neu-button text-[11px] text-slate-300 hover:text-brand-300"
+                      className="px-2.5 py-1.5 rounded-xl neu-button text-[10px] sm:text-[11px] text-slate-300 hover:text-brand-300 cursor-pointer text-left"
                     >
                       {sug}
                     </button>

@@ -22,6 +22,14 @@ import {
   CheckCircle2,
   Settings,
   Pencil,
+  Menu,
+  X,
+  LayoutDashboard,
+  Palette,
+  Moon,
+  Sun,
+  Globe,
+  Check,
 } from 'lucide-react';
 import { logout, selectCurrentUser, uploadUserAvatar } from '../../redux/authSlice.js';
 import { supabase } from '../../services/supabaseClient.js';
@@ -32,12 +40,12 @@ import {
   selectSelectedYear,
   selectSelectedSemester,
 } from '../../redux/academicSlice.js';
-import ThemeSwitcher from './ThemeSwitcher.jsx';
+import ThemeSwitcher, { THEMES } from './ThemeSwitcher.jsx';
 import LanguageSwitcher from './LanguageSwitcher.jsx';
 import SettingsModal from './SettingsModal.jsx';
 
 export const Navbar = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,6 +61,7 @@ export const Navbar = () => {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarToast, setAvatarToast] = useState('');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState('stream');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -175,13 +184,13 @@ export const Navbar = () => {
           </nav>
         </div>
 
-        {/* Right: Academic Context Pill, Language Switcher, Theme Switcher, and Profile */}
-        <div className="flex items-center space-x-2 sm:space-x-3">
+        {/* Desktop Right Controls: Language, Theme, Profile, Settings, and Logout (Hidden on mobile) */}
+        <div className="hidden md:flex items-center space-x-2 sm:space-x-3">
           {/* Active Enrolled College Badge (Strictly Locked / Read-Only) */}
           {hasAcademicContext && (
             <div
               id="navbar-context-pill"
-              className="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-2xl neu-pressed text-xs text-slate-300 select-none"
+              className="hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-2xl neu-pressed text-xs text-slate-300 select-none"
               title="Verified Enrolled Institution (Permanent)"
             >
               <span className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse" />
@@ -198,10 +207,8 @@ export const Navbar = () => {
           {/* Multilingual Switcher (English, Telugu, Tamil) */}
           <LanguageSwitcher />
 
-
           {/* User-Defined Neumorphic Theme Switcher */}
           <ThemeSwitcher />
-
 
           {/* User Profile Capsule with Interactive Settings & Logout Menu */}
           <div className="relative flex items-center space-x-2">
@@ -260,7 +267,10 @@ export const Navbar = () => {
 
             {/* Settings Modal Button */}
             <button
-              onClick={() => setIsSettingsOpen(true)}
+              onClick={() => {
+                setSettingsInitialTab('security');
+                setIsSettingsOpen(true);
+              }}
               id="navbar-open-settings-btn"
               title="Account & System Settings"
               className="p-2.5 rounded-xl neu-button text-slate-400 hover:text-brand-400 hover:border-brand-500/30 transition-all"
@@ -439,6 +449,271 @@ export const Navbar = () => {
           </div>
 
         </div>
+
+        {/* Mobile Right Navigation Menu Trigger */}
+        <button
+          type="button"
+          onClick={() => setIsMobileDrawerOpen(true)}
+          id="mobile-top-nav-drawer-btn"
+          className="flex md:hidden items-center space-x-2 px-2.5 py-1.5 rounded-xl neu-button border border-brand-500/30 text-slate-200 hover:text-brand-300 transition-all cursor-pointer"
+          title="Open Navigation Menu"
+        >
+          <div className="relative w-6 h-6 rounded-lg overflow-hidden flex items-center justify-center neu-pressed">
+            <div className="absolute inset-0 bg-gradient-to-tr from-brand-600 to-accent-violet flex items-center justify-center text-white font-black text-[10px]">
+              {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
+            </div>
+            {(avatarPreview || user?.avatar_url) && (
+              <img
+                src={avatarPreview || user?.avatar_url}
+                alt={user.full_name || 'Profile'}
+                className="relative z-10 w-full h-full object-cover rounded-lg"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            )}
+          </div>
+          <Menu className="w-4 h-4 text-brand-400" />
+        </button>
+
+        {/* Right-Side Mobile Navigation Slide-Over Drawer */}
+        {isMobileDrawerOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm animate-fade-in md:hidden"
+              onClick={() => setIsMobileDrawerOpen(false)}
+            />
+
+            {/* Slide Drawer from Right */}
+            <div className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm z-50 neu-flat bg-dark-card dark:bg-[#111625] bg-white text-slate-100 p-5 flex flex-col justify-between overflow-y-auto shadow-2xl border-l border-dark-border animate-slide-left md:hidden space-y-4">
+              <div className="space-y-4">
+                {/* Drawer Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-xl neu-button text-brand-400 flex items-center justify-center">
+                      <GraduationCap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-black text-slate-900 dark:text-white tracking-tight">STUDIX</span>
+                      <span className="block text-[9px] text-brand-400 font-bold uppercase">Navigation Menu</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileDrawerOpen(false)}
+                    id="mobile-drawer-close-btn"
+                    className="p-2 rounded-xl neu-button text-slate-400 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Profile Header in Drawer */}
+                <div className="p-3 rounded-2xl neu-pressed flex items-center space-x-3">
+                  <div
+                    onClick={() => {
+                      avatarInputRef.current?.click();
+                    }}
+                    className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 neu-button cursor-pointer border border-brand-500/30"
+                    title="Change profile photo"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-tr from-brand-600 to-accent-violet flex items-center justify-center text-white font-black text-sm">
+                      {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
+                    </div>
+                    {(avatarPreview || user?.avatar_url) && (
+                      <img
+                        src={avatarPreview || user?.avatar_url}
+                        alt={user?.full_name || 'Profile'}
+                        className="relative z-10 w-full h-full object-cover"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition-opacity">
+                      <Camera className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {user?.full_name || 'Student'}
+                    </h4>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
+                    <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-brand-500/20 text-brand-300">
+                      {user?.role === 'ADMIN' ? 'Admin Access' : 'Verified Campus Student'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Academic Stream & Change Semester Card */}
+                <div className="p-3 rounded-2xl neu-pressed space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Campus Stream</span>
+                    <span className="text-[10px] font-bold text-accent-emerald flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent-emerald animate-pulse" />
+                      Enrolled
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                    {college?.name || college?.code || 'University'}
+                  </p>
+                  <p className="text-[11px] text-brand-400 font-semibold truncate">
+                    {department?.name || department?.code || 'Academic Branch'}
+                  </p>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                      Year {year || 1} • Sem {semester || 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileDrawerOpen(false);
+                        setSettingsInitialTab('stream');
+                        setIsSettingsOpen(true);
+                      }}
+                      className="px-2.5 py-1 rounded-lg neu-button text-[10px] font-bold text-amber-300 flex items-center space-x-1 border border-amber-500/30 hover:bg-amber-500/10 cursor-pointer"
+                    >
+                      <Pencil className="w-2.5 h-2.5" />
+                      <span>Change Semester</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Navigation Links in Drawer */}
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Pages</p>
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setIsMobileDrawerOpen(false)}
+                    className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-2.5 ${
+                      location.pathname === '/dashboard' ? 'neu-tab-active text-brand-300' : 'neu-button text-slate-300'
+                    }`}
+                  >
+                    <LayoutDashboard className="w-4 h-4 text-brand-400" />
+                    <span>Dashboard</span>
+                  </Link>
+                  <Link
+                    to="/repository"
+                    onClick={() => setIsMobileDrawerOpen(false)}
+                    className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-2.5 ${
+                      location.pathname === '/repository' ? 'neu-tab-active text-brand-300' : 'neu-button text-slate-300'
+                    }`}
+                  >
+                    <FolderArchive className="w-4 h-4 text-brand-400" />
+                    <span>Academic Repository</span>
+                  </Link>
+                  <Link
+                    to="/ai-assistant"
+                    onClick={() => setIsMobileDrawerOpen(false)}
+                    className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-2.5 ${
+                      location.pathname === '/ai-assistant' ? 'neu-tab-active text-amber-300' : 'neu-button text-slate-300'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>AI Exam Solver</span>
+                  </Link>
+                  {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') &&
+                    (user?.email || '').toLowerCase().trim() === 'vshivachaitanya7@gmail.com' && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setIsMobileDrawerOpen(false)}
+                        className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-2.5 ${
+                          location.pathname === '/admin' ? 'neu-tab-active text-purple-300' : 'neu-button text-purple-400'
+                        }`}
+                      >
+                        <ShieldCheck className="w-4 h-4 text-purple-400" />
+                        <span>Admin Panel</span>
+                      </Link>
+                    )}
+                </div>
+
+                {/* Multilingual & Theme Controls in Drawer */}
+                <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1.5">
+                      <Globe className="w-3 h-3 text-accent-cyan" />
+                      <span>Language</span>
+                    </p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { code: 'en', label: 'English' },
+                        { code: 'te', label: 'తెలుగు' },
+                        { code: 'ta', label: 'தமிழ்' },
+                      ].map((lng) => {
+                        const isSelected = i18n.language === lng.code;
+                        return (
+                          <button
+                            key={lng.code}
+                            type="button"
+                            onClick={() => i18n.changeLanguage(lng.code)}
+                            className={`py-1.5 px-2 rounded-xl text-[11px] font-bold text-center transition-all cursor-pointer ${
+                              isSelected
+                                ? 'neu-pressed text-brand-300 border border-brand-500/40 font-black'
+                                : 'neu-button text-slate-400'
+                            }`}
+                          >
+                            {lng.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1.5">
+                      <Palette className="w-3 h-3 text-brand-400" />
+                      <span>Theme & Colors</span>
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {THEMES.map((th) => (
+                        <button
+                          key={th.id}
+                          type="button"
+                          onClick={() => {
+                            const isLight = th.id === 'neu-soft-minimal';
+                            document.documentElement.className = isLight ? 'neu-soft-minimal light' : `${th.id} dark`;
+                            localStorage.setItem('studix_theme', th.id);
+                          }}
+                          className="py-1.5 px-2.5 rounded-xl neu-button text-[11px] font-bold text-slate-300 flex items-center space-x-2 cursor-pointer"
+                        >
+                          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: th.color }} />
+                          <span className="truncate">{th.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Account Settings & Logout in Drawer */}
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2 mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileDrawerOpen(false);
+                    setSettingsInitialTab('security');
+                    setIsSettingsOpen(true);
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl neu-button text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-white flex items-center justify-center space-x-2 cursor-pointer"
+                >
+                  <Settings className="w-4 h-4 text-brand-400" />
+                  <span>Password & Settings</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileDrawerOpen(false);
+                    setShowLogoutConfirm(true);
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl neu-button text-xs font-bold text-rose-500 hover:bg-rose-500/10 flex items-center justify-center space-x-2 border border-rose-500/30 cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 text-rose-500" />
+                  <span>Log Out</span>
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Account & App Settings Modal */}

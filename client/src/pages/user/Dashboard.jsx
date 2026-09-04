@@ -120,15 +120,15 @@ export const Dashboard = () => {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl neu-flat p-6 sm:p-8"
+        className="relative overflow-hidden rounded-3xl neu-flat p-4 sm:p-8"
       >
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-start sm:items-center space-x-4">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6">
+          <div className="flex items-start sm:items-center space-x-3 sm:space-x-4">
             {/* User Avatar Circle with Camera Overlay */}
             <div
               onClick={() => avatarInputRef.current?.click()}
               title="Click to upload profile photo"
-              className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden flex-shrink-0 neu-button cursor-pointer group border-2 border-brand-500/30"
+              className="relative w-14 h-14 sm:w-20 sm:h-20 rounded-2xl overflow-hidden flex-shrink-0 neu-button cursor-pointer group border-2 border-brand-500/30"
             >
               {isAvatarUploading ? (
                 <div className="w-full h-full bg-dark-bg/80 flex items-center justify-center">
@@ -136,7 +136,7 @@ export const Dashboard = () => {
                 </div>
               ) : (
                 <>
-                  <div className="absolute inset-0 bg-gradient-to-tr from-brand-600 to-accent-violet flex items-center justify-center text-white font-black text-2xl">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-brand-600 to-accent-violet flex items-center justify-center text-white font-black text-xl sm:text-2xl">
                     {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
                   </div>
                   {(avatarPreview || user?.avatar_url) && (
@@ -149,21 +149,21 @@ export const Dashboard = () => {
                   )}
                 </>
               )}
-              <div className="absolute inset-0 z-20 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold">
-                <Camera className="w-5 h-5 mb-0.5" />
+              <div className="absolute inset-0 z-20 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[9px] sm:text-[10px] font-bold">
+                <Camera className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" />
                 <span>Upload</span>
               </div>
             </div>
 
-            <div>
-              <div className="flex items-center space-x-2 text-xs font-bold text-brand-300 uppercase tracking-wider mb-1">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-2 text-[10px] sm:text-xs font-bold text-brand-300 uppercase tracking-wider mb-1">
                 <span className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse" />
                 <span>Verified Campus Stream</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight truncate">
                 Welcome back, {user?.full_name || 'Scholar'}!
               </h1>
-              <div className="text-sm text-slate-300 mt-1.5 flex flex-wrap items-center gap-2.5">
+              <div className="text-xs sm:text-sm text-slate-300 mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2.5">
                 <span className="font-bold text-white tracking-tight">
                   {college?.name || 'Dhanalakshmi Srinivasan University Trichy'}
                 </span>
@@ -172,9 +172,9 @@ export const Dashboard = () => {
                   {department?.name || department?.code || 'Computer Science & Engineering'}
                 </span>
                 <span className="text-slate-500">•</span>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-3 py-1 rounded-xl text-xs font-black bg-amber-400/15 text-amber-300 border border-amber-400/30 tracking-wide shadow-sm flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                  <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-xl text-[11px] sm:text-xs font-black bg-amber-400/15 text-amber-300 border border-amber-400/30 tracking-wide shadow-sm flex items-center gap-1.5">
+                    <Calendar className="w-3 h-3 text-amber-400" />
                     <span>Year {year || 1} • Semester {semester || 1}</span>
                   </span>
                   <button
@@ -184,10 +184,10 @@ export const Dashboard = () => {
                       setIsSettingsOpen(true);
                     }}
                     id="dashboard-change-semester-btn"
-                    className="px-2.5 py-1 rounded-xl neu-button text-[10px] font-extrabold text-amber-400 hover:text-white flex items-center space-x-1 border border-amber-500/40 hover:bg-amber-500/15 transition-all shadow-sm cursor-pointer"
+                    className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl neu-button text-[10px] font-extrabold text-amber-400 hover:text-white flex items-center space-x-1 border border-amber-500/40 hover:bg-amber-500/15 transition-all shadow-sm cursor-pointer"
                     title="Change your Academic Year and Semester"
                   >
-                    <Pencil className="w-3 h-3 text-amber-400" />
+                    <Pencil className="w-2.5 h-2.5 text-amber-400" />
                     <span>Change Semester</span>
                   </button>
                 </div>
@@ -195,10 +195,11 @@ export const Dashboard = () => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 flex-wrap gap-y-2">
+          {/* Action Buttons: Responsive grid layout for mobile without clipping */}
+          <div className="w-full md:w-auto grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3">
             <div
               id="enrolled-campus-badge"
-              className="px-3.5 py-2.5 rounded-xl neu-pressed text-slate-300 text-xs font-semibold flex items-center space-x-2 select-none"
+              className="px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl neu-pressed text-slate-300 text-xs font-semibold flex items-center justify-center space-x-1.5 select-none"
               title="Dhanalakshmi Srinivasan University verified campus stream"
             >
               <span className="w-2 h-2 rounded-full bg-accent-emerald" />
@@ -207,24 +208,26 @@ export const Dashboard = () => {
             </div>
 
             <button
+              type="button"
               onClick={() => {
                 setSettingsTab('security');
                 setIsSettingsOpen(true);
               }}
               id="dashboard-open-settings-btn"
               title="Change Password & Account Settings"
-              className="px-4 py-2.5 rounded-xl neu-button text-slate-800 dark:text-slate-200 hover:text-brand-600 dark:hover:text-white text-xs font-bold flex items-center space-x-2 border border-slate-300 dark:border-slate-700/60 hover:border-brand-500/40 transition-all"
+              className="px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl neu-button text-slate-800 dark:text-slate-200 hover:text-brand-400 text-xs font-bold flex items-center justify-center space-x-1.5 border border-slate-300 dark:border-slate-700/60 hover:border-brand-500/40 transition-all cursor-pointer truncate"
             >
-              <Lock className="w-4 h-4 text-brand-500 dark:text-brand-400" />
-              <span>Password & Settings</span>
+              <Lock className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400 flex-shrink-0" />
+              <span className="truncate">Settings</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setIsUploadOpen(true)}
               id="dashboard-upload-btn"
-              className="px-5 py-2.5 rounded-xl neu-button text-white text-xs font-bold shadow-glow flex items-center space-x-2 border-brand-500/40"
+              className="col-span-2 sm:col-span-1 px-4 py-2.5 sm:px-5 rounded-xl neu-button text-white text-xs font-bold shadow-glow flex items-center justify-center space-x-2 border-brand-500/40 cursor-pointer"
             >
-              <Upload className="w-4 h-4 text-accent-emerald" />
+              <Upload className="w-4 h-4 text-accent-emerald flex-shrink-0" />
               <span>Upload Resource</span>
             </button>
           </div>
@@ -232,44 +235,44 @@ export const Dashboard = () => {
       </motion.div>
 
       {/* Quick Metrics Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl neu-flat flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-xl neu-button text-brand-400 flex items-center justify-center">
-            <BookOpen className="w-6 h-6" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="p-3 sm:p-4 rounded-2xl neu-flat flex items-center space-x-3 sm:space-x-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl neu-button text-brand-400 flex items-center justify-center flex-shrink-0">
+            <BookOpen className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-2xl font-black text-white">{subjects?.length || 4}</span>
-            <p className="text-xs text-slate-400 font-medium">Enrolled Subjects</p>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-2xl neu-flat flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-xl neu-button text-accent-violet flex items-center justify-center">
-            <FileText className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="text-2xl font-black text-white">48+</span>
-            <p className="text-xs text-slate-400 font-medium">Exam Papers Available</p>
+          <div className="min-w-0">
+            <span className="text-lg sm:text-2xl font-black text-white">{subjects?.length || 4}</span>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Enrolled Subjects</p>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl neu-flat flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-xl neu-button text-accent-emerald flex items-center justify-center">
-            <BrainCircuit className="w-6 h-6" />
+        <div className="p-3 sm:p-4 rounded-2xl neu-flat flex items-center space-x-3 sm:space-x-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl neu-button text-accent-violet flex items-center justify-center flex-shrink-0">
+            <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-2xl font-black text-white">Gemini 2.0</span>
-            <p className="text-xs text-slate-400 font-medium">AI Exam Assistant</p>
+          <div className="min-w-0">
+            <span className="text-lg sm:text-2xl font-black text-white">48+</span>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Exam Papers</p>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl neu-flat flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-xl neu-button text-amber-400 flex items-center justify-center">
-            <Award className="w-6 h-6" />
+        <div className="p-3 sm:p-4 rounded-2xl neu-flat flex items-center space-x-3 sm:space-x-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl neu-button text-accent-emerald flex items-center justify-center flex-shrink-0">
+            <BrainCircuit className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-2xl font-black text-white">100%</span>
-            <p className="text-xs text-slate-400 font-medium">Curriculum Match</p>
+          <div className="min-w-0">
+            <span className="text-lg sm:text-2xl font-black text-white">Gemini 2.0</span>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">AI Exam Assistant</p>
+          </div>
+        </div>
+
+        <div className="p-3 sm:p-4 rounded-2xl neu-flat flex items-center space-x-3 sm:space-x-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl neu-button text-amber-400 flex items-center justify-center flex-shrink-0">
+            <Award className="w-5 h-5 sm:w-6 sm:h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-lg sm:text-2xl font-black text-white">100%</span>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Curriculum Match</p>
           </div>
         </div>
       </div>

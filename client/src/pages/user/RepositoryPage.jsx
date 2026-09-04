@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   FolderOpen,
   HelpCircle,
+  X,
 } from 'lucide-react';
 import {
   fetchResources,
@@ -59,18 +60,16 @@ export const RepositoryPage = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedSemesterFilter, setSelectedSemesterFilter] = useState('');
 
-  // Initial load of repository resources strictly filtered for current college & branch
+  // Initial load of repository resources for current college & branch (fetch all semesters so search works across entire archive)
   useEffect(() => {
     dispatch(
       fetchResources({
         collegeId: college?.id,
         departmentId: department?.id,
-        year,
-        semester,
       })
     );
     dispatch(fetchUserBookmarks());
-  }, [dispatch, college?.id, department?.id, year, semester]);
+  }, [dispatch, college?.id, department?.id]);
 
 
   // Tab definitions
@@ -115,7 +114,7 @@ export const RepositoryPage = () => {
     },
   ];
 
-  // Filtered dataset
+  // Filtered dataset with full multi-field tokenized matching
   const filteredList = (activeTab === 'BOOKMARKS' ? bookmarks : resources).filter(
     (item) => {
       // 1. Tab category check
@@ -145,14 +144,27 @@ export const RepositoryPage = () => {
         }
       }
 
-      // 2. Search query check
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesTitle = item.title?.toLowerCase().includes(q);
-        const matchesSubName = item.subject?.name?.toLowerCase().includes(q);
-        const matchesSubCode = item.subject?.code?.toLowerCase().includes(q);
-        const matchesType = item.resource_type?.toLowerCase().includes(q);
-        if (!matchesTitle && !matchesSubName && !matchesSubCode && !matchesType) {
+      // 2. Search query check (tokenized multi-field matching for real-time mobile search)
+      if (searchQuery && searchQuery.trim()) {
+        const tokens = searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        const searchableCorpus = [
+          item.title || '',
+          item.subject?.name || '',
+          item.subject?.code || '',
+          item.subject_name || '',
+          item.resource_type || '',
+          (item.resource_type || '').replace(/_/g, ' '),
+          (item.ocr_extracted_text || '').slice(0, 1500),
+          item.uploader?.full_name || '',
+          `sem ${item.semester || ''}`,
+          `semester ${item.semester || ''}`,
+          `year ${item.year || ''}`,
+        ]
+          .join(' ')
+          .toLowerCase();
+
+        const matchesAllTokens = tokens.every((token) => searchableCorpus.includes(token));
+        if (!matchesAllTokens) {
           return false;
         }
       }
@@ -175,15 +187,15 @@ export const RepositoryPage = () => {
 
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6">
       {/* Top Banner with Campus Stream & Upload Trigger */}
-      <div className="p-6 sm:p-7 rounded-3xl neu-flat flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+      <div className="p-4 sm:p-7 rounded-3xl neu-flat flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 relative overflow-hidden">
         <div>
-          <div className="flex items-center space-x-2 text-xs font-bold text-brand-300 uppercase tracking-wider mb-2">
+          <div className="flex items-center space-x-2 text-xs font-bold text-brand-300 uppercase tracking-wider mb-1.5">
             <Sparkles className="w-4 h-4 text-brand-400" />
             <span>Multi-Tenant Resource Archive</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight">
             Academic Repository
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1 flex flex-wrap items-center gap-2">
@@ -196,19 +208,17 @@ export const RepositoryPage = () => {
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="px-3.5 py-2.5 rounded-xl neu-pressed text-xs font-semibold text-slate-300 flex items-center space-x-2 select-none">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl neu-pressed text-xs font-semibold text-slate-300 flex items-center space-x-2 select-none">
             <span className="w-2 h-2 rounded-full bg-accent-emerald" />
             <span className="font-extrabold text-brand-300">{college?.code || 'Campus'}</span>
             <span className="text-slate-400 font-medium">Campus Archive</span>
           </div>
 
-
-
           <button
             onClick={() => setIsUploadModalOpen(true)}
             id="repository-upload-btn"
-            className="px-5 py-2.5 rounded-xl neu-button text-xs font-bold text-white shadow-glow flex items-center space-x-2 border-brand-500/40"
+            className="flex-1 sm:flex-initial px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl neu-button text-xs font-bold text-white shadow-glow flex items-center justify-center space-x-2 border-brand-500/40 cursor-pointer"
           >
             <Upload className="w-4 h-4 text-accent-emerald" />
             <span>Upload Document</span>
@@ -257,8 +267,21 @@ export const RepositoryPage = () => {
             value={searchQuery}
             onChange={(e) => dispatch(setSearchQuery(e.target.value))}
             placeholder="Search paper title, code, or keyword..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck="false"
+            className="w-full pl-10 pr-9 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => dispatch(setSearchQuery(''))}
+              className="absolute right-3 top-2.5 p-1 rounded-lg neu-button text-slate-400 hover:text-white cursor-pointer"
+              title="Clear search"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
         </div>
 
         {/* Subject Filter Dropdown */}
@@ -306,22 +329,34 @@ export const RepositoryPage = () => {
           ))}
         </div>
       ) : (
-        <div className="p-12 rounded-3xl neu-pressed text-center space-y-3">
+        <div className="p-8 sm:p-12 rounded-3xl neu-pressed text-center space-y-3">
           <FolderOpen className="w-10 h-10 text-slate-500 mx-auto" />
           <h3 className="text-base font-bold text-white">No Matching Resources</h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
             We couldn&apos;t find any documents matching your current filters or search term.
           </p>
-          <button
-            onClick={() => {
-              dispatch(setSearchQuery(''));
-              dispatch(setSelectedSubjectFilter(''));
-              setSelectedSemesterFilter('');
-            }}
-            className="mt-2 px-4 py-2 rounded-xl neu-button text-xs font-semibold text-brand-300"
-          >
-            Reset Filters
-          </button>
+          <div className="flex flex-wrap justify-center gap-2 pt-2">
+            {selectedSemesterFilter && (
+              <button
+                type="button"
+                onClick={() => setSelectedSemesterFilter('')}
+                className="px-3 py-1.5 rounded-xl neu-button text-xs font-bold text-amber-300 hover:text-white cursor-pointer"
+              >
+                Search All Semesters
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                dispatch(setSearchQuery(''));
+                dispatch(setSelectedSubjectFilter(''));
+                setSelectedSemesterFilter('');
+              }}
+              className="px-4 py-2 rounded-xl neu-button text-xs font-semibold text-brand-300 hover:text-white cursor-pointer"
+            >
+              Reset Filters
+            </button>
+          </div>
         </div>
       )}
 
