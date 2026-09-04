@@ -84,10 +84,37 @@ export const uploadUserAvatar = createAsyncThunk(
     try {
       const formData = new FormData();
       formData.append('avatar', file);
-      const response = await api.post('/auth/avatar', formData);
-      const updatedUser = response.data?.data?.user || { ...response.data?.data };
-      localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUser));
-      sessionStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUser));
+
+      const token =
+        localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) ||
+        sessionStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const uploadUrl = `${baseUrl.replace(/\/+$/, '')}/auth/avatar`;
+
+      let updatedUser = null;
+
+      try {
+        const fetchRes = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: formData,
+        });
+        const data = await fetchRes.json();
+        if (!fetchRes.ok || !data.success) {
+          throw new Error(data.message || 'Avatar upload failed');
+        }
+        updatedUser = data.data?.user || data.data;
+      } catch (fetchErr) {
+        console.warn('Native fetch avatar notice, trying Axios fallback:', fetchErr);
+        const response = await api.post('/auth/avatar', formData);
+        updatedUser = response.data?.data?.user || response.data?.data;
+      }
+
+      if (updatedUser) {
+        localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUser));
+        sessionStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUser));
+      }
       return updatedUser;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || err.message || 'Failed to upload profile photo');

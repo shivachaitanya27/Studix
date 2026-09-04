@@ -52,16 +52,26 @@ export const Dashboard = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const avatarInputRef = React.useRef(null);
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
-
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarToast, setAvatarToast] = useState('');
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Instant optimistic preview
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
+
     try {
       setIsAvatarUploading(true);
       await dispatch(uploadUserAvatar(file)).unwrap();
+      setAvatarToast('Profile photo updated successfully!');
+      setTimeout(() => setAvatarToast(''), 3500);
     } catch (err) {
-      alert(err || 'Failed to upload photo');
+      setAvatarPreview(null);
+      setAvatarToast(typeof err === 'string' ? err : (err?.message || 'Failed to update photo'));
+      setTimeout(() => setAvatarToast(''), 4500);
     } finally {
       setIsAvatarUploading(false);
       if (e.target) e.target.value = '';
@@ -127,9 +137,9 @@ export const Dashboard = () => {
                   <div className="absolute inset-0 bg-gradient-to-tr from-brand-600 to-accent-violet flex items-center justify-center text-white font-black text-2xl">
                     {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
                   </div>
-                  {user?.avatar_url && (
+                  {(avatarPreview || user?.avatar_url) && (
                     <img
-                      src={user.avatar_url}
+                      src={avatarPreview || user?.avatar_url}
                       alt={user.full_name || 'Profile'}
                       className="relative z-10 w-full h-full object-cover rounded-2xl"
                       onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -316,6 +326,14 @@ export const Dashboard = () => {
 
       {/* Account & Password Settings Modal */}
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} user={user} />
+
+      {/* Profile Photo Toast Notification */}
+      {avatarToast && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-2xl border border-brand-500/40 flex items-center space-x-2 animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>{avatarToast}</span>
+        </div>
+      )}
     </div>
   );
 };

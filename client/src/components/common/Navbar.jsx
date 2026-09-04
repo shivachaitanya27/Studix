@@ -49,24 +49,38 @@ export const Navbar = () => {
 
   const avatarInputRef = useRef(null);
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarToast, setAvatarToast] = useState('');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Instant optimistic preview
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
+
     try {
       setIsAvatarUploading(true);
       await dispatch(uploadUserAvatar(file)).unwrap();
+      setAvatarToast('Profile photo updated successfully!');
+      setTimeout(() => setAvatarToast(''), 3500);
     } catch (err) {
-      alert(err || 'Failed to upload photo');
+      setAvatarPreview(null);
+      setAvatarToast(typeof err === 'string' ? err : (err?.message || 'Failed to update photo'));
+      setTimeout(() => setAvatarToast(''), 4500);
     } finally {
       setIsAvatarUploading(false);
       if (e.target) e.target.value = '';
     }
   };
 
-  const handleLogout = async () => {
+  const confirmLogout = async () => {
+    setShowLogoutConfirm(false);
+    setIsProfileMenuOpen(false);
     try {
       if (supabase) {
         await supabase.auth.signOut();
@@ -75,7 +89,6 @@ export const Navbar = () => {
       console.warn('Supabase logout notice:', err);
     }
     dispatch(logout());
-    setIsProfileMenuOpen(false);
     navigate('/login', { replace: true });
   };
 
@@ -214,9 +227,9 @@ export const Navbar = () => {
                     <div className="absolute inset-0 bg-gradient-to-tr from-brand-600 to-accent-violet flex items-center justify-center text-white font-black text-[11px]">
                       {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
                     </div>
-                    {user?.avatar_url && (
+                    {(avatarPreview || user?.avatar_url) && (
                       <img
-                        src={user.avatar_url}
+                        src={avatarPreview || user?.avatar_url}
                         alt={user.full_name || 'Profile'}
                         className="relative z-10 w-full h-full object-cover rounded-lg"
                         onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -254,9 +267,10 @@ export const Navbar = () => {
 
             {/* Quick Logout Button */}
             <button
-              onClick={handleLogout}
+              onClick={() => setShowLogoutConfirm(true)}
+              id="navbar-quick-logout-btn"
               title="Log Out"
-              className="p-2.5 rounded-xl neu-button text-slate-400 hover:text-rose-500 hover:border-rose-500/30 transition-all"
+              className="p-2.5 rounded-xl neu-button text-slate-400 hover:text-rose-500 hover:border-rose-500/30 transition-all cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -285,9 +299,9 @@ export const Navbar = () => {
                           <div className="absolute inset-0 bg-gradient-to-tr from-brand-600 to-accent-violet flex items-center justify-center text-white font-black text-lg">
                             {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
                           </div>
-                          {user?.avatar_url && (
+                          {(avatarPreview || user?.avatar_url) && (
                             <img
-                              src={user.avatar_url}
+                              src={avatarPreview || user?.avatar_url}
                               alt={user.full_name || 'Profile'}
                               className="relative z-10 w-full h-full object-cover rounded-xl"
                               onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -372,8 +386,12 @@ export const Navbar = () => {
                   <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
                     <button
                       type="button"
-                      onClick={handleLogout}
-                      className="w-full py-2.5 px-3 rounded-xl neu-button text-xs font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-all flex items-center justify-center space-x-2 border border-rose-500/30 group"
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        setShowLogoutConfirm(true);
+                      }}
+                      id="navbar-profile-logout-btn"
+                      className="w-full py-2.5 px-3 rounded-xl neu-button text-xs font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-all flex items-center justify-center space-x-2 border border-rose-500/30 group cursor-pointer"
                     >
                       <LogOut className="w-4 h-4 text-rose-500 group-hover:scale-110 transition-transform" />
                       <span>Log Out of Account</span>
@@ -396,6 +414,55 @@ export const Navbar = () => {
         onClose={() => setIsSettingsOpen(false)}
         user={user}
       />
+
+      {/* Logout Confirmation Permission Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div
+            className="fixed inset-0"
+            onClick={() => setShowLogoutConfirm(false)}
+          />
+          <div className="relative w-full max-w-sm rounded-3xl neu-flat bg-white dark:bg-[#151926] p-6 z-10 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800 text-center">
+            <div className="w-14 h-14 rounded-2xl mx-auto neu-button flex items-center justify-center text-rose-500 border border-rose-500/30 bg-rose-500/10">
+              <LogOut className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
+                Log Out of Studix?
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                Are you sure you want to log out? You will need to sign in again to access verified campus streams.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                id="logout-cancel-btn"
+                className="py-2.5 px-4 rounded-xl neu-button text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmLogout}
+                id="logout-confirm-btn"
+                className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white text-xs font-bold shadow-lg transition-all cursor-pointer"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Photo Toast Notification */}
+      {avatarToast && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-2xl border border-brand-500/40 flex items-center space-x-2 animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>{avatarToast}</span>
+        </div>
+      )}
     </header>
   );
 };

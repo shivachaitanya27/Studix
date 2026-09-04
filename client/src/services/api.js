@@ -4,10 +4,7 @@ import { STORAGE_KEYS } from '../types/index.js';
 // Base API instance
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 25000,
+  timeout: 30000,
 });
 
 // Request interceptor: automatically attach Authorization Bearer token from localStorage or sessionStorage

@@ -15,6 +15,7 @@ import {
   Sparkles,
   Loader2,
   Save,
+  ArrowLeft,
 } from 'lucide-react';
 import api from '../../services/api.js';
 
@@ -283,11 +284,21 @@ export const SettingsModal = ({ isOpen, onClose, user }) => {
               />
             </div>
 
-            <div className="pt-3">
+            <div className="pt-3 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                id="settings-password-back-btn"
+                className="py-3 px-5 rounded-xl neu-button text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white text-xs font-bold transition-all flex items-center justify-center space-x-2 border border-slate-300 dark:border-slate-700 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back</span>
+              </button>
+
               <button
                 type="submit"
                 disabled={passwordLoading}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-accent-violet hover:from-brand-500 hover:to-accent-violet text-white text-xs font-black shadow-glow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-[0.99] cursor-pointer"
+                className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-accent-violet hover:from-brand-500 hover:to-accent-violet text-white text-xs font-black shadow-glow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-[0.99] cursor-pointer"
               >
                 {passwordLoading ? (
                   <>
