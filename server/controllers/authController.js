@@ -125,6 +125,12 @@ export const authController = {
         updates.semester = parseInt(updates.semester, 10);
       }
 
+      // Security check: Only Admin is permitted to change college or department
+      if (req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
+        delete updates.college_id;
+        delete updates.department_id;
+      }
+
       const updatedUser = await authService.updateProfile(req.user.id, updates);
       return res.status(200).json({
         success: true,

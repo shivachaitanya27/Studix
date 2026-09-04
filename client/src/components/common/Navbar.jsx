@@ -389,36 +389,38 @@ export const Navbar = () => {
                     )}
                   </div>
 
-                  {/* Change Academic Stream, Department & College Controls */}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileMenuOpen(false);
-                        setSettingsInitialTab('stream');
-                        setIsSettingsOpen(true);
-                      }}
-                      id="profile-dropdown-dept-btn"
-                      className="py-2 px-2.5 rounded-xl neu-button text-[11px] font-bold text-brand-600 dark:text-brand-300 hover:text-white flex items-center justify-center space-x-1 border border-brand-500/30 transition-all bg-brand-500/5 hover:bg-brand-500/15 cursor-pointer"
-                    >
-                      <Building2 className="w-3 h-3 text-brand-400" />
-                      <span>Change Dept</span>
-                    </button>
+                  {/* Admin-Only: Change Department & Change College Controls */}
+                  {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          setSettingsInitialTab('stream');
+                          setIsSettingsOpen(true);
+                        }}
+                        id="profile-dropdown-dept-btn"
+                        className="py-2 px-2.5 rounded-xl neu-button text-[11px] font-bold text-brand-600 dark:text-brand-300 hover:text-white flex items-center justify-center space-x-1 border border-brand-500/30 transition-all bg-brand-500/5 hover:bg-brand-500/15 cursor-pointer"
+                      >
+                        <Building2 className="w-3 h-3 text-brand-400" />
+                        <span>Change Dept</span>
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileMenuOpen(false);
-                        setSettingsInitialTab('stream');
-                        setIsSettingsOpen(true);
-                      }}
-                      id="profile-dropdown-college-btn"
-                      className="py-2 px-2.5 rounded-xl neu-button text-[11px] font-bold text-accent-cyan hover:text-white flex items-center justify-center space-x-1 border border-accent-cyan/30 transition-all bg-cyan-500/5 hover:bg-cyan-500/15 cursor-pointer"
-                    >
-                      <School className="w-3 h-3 text-accent-cyan" />
-                      <span>Change College</span>
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          setSettingsInitialTab('stream');
+                          setIsSettingsOpen(true);
+                        }}
+                        id="profile-dropdown-college-btn"
+                        className="py-2 px-2.5 rounded-xl neu-button text-[11px] font-bold text-accent-cyan hover:text-white flex items-center justify-center space-x-1 border border-accent-cyan/30 transition-all bg-cyan-500/5 hover:bg-cyan-500/15 cursor-pointer"
+                      >
+                        <School className="w-3 h-3 text-accent-cyan" />
+                        <span>Change College</span>
+                      </button>
+                    </div>
+                  )}
 
                   <button
                     type="button"
@@ -621,36 +623,38 @@ export const Navbar = () => {
                   </button>
                 </div>
 
-                {/* Quick Action Options: Change Department & Change College */}
-                <div className="grid grid-cols-2 gap-1.5 pt-1.5 border-t border-slate-200 dark:border-slate-700/60">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsMobileDrawerOpen(false);
-                      setSettingsInitialTab('stream');
-                      setIsSettingsOpen(true);
-                    }}
-                    id="mobile-drawer-change-dept-btn"
-                    className="px-2 py-1.5 rounded-xl neu-button text-[10px] font-bold text-brand-600 dark:text-brand-300 hover:text-brand-700 dark:hover:text-white flex items-center justify-center space-x-1 border border-brand-500/30 hover:bg-brand-500/10 cursor-pointer"
-                  >
-                    <Building2 className="w-3 h-3 text-brand-500 flex-shrink-0" />
-                    <span className="truncate">Change Dept</span>
-                  </button>
+                {/* Admin-Only Quick Action Options: Change Department & Change College */}
+                {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
+                  <div className="grid grid-cols-2 gap-1.5 pt-1.5 border-t border-slate-200 dark:border-slate-700/60">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileDrawerOpen(false);
+                        setSettingsInitialTab('stream');
+                        setIsSettingsOpen(true);
+                      }}
+                      id="mobile-drawer-change-dept-btn"
+                      className="px-2 py-1.5 rounded-xl neu-button text-[10px] font-bold text-brand-600 dark:text-brand-300 hover:text-brand-700 dark:hover:text-white flex items-center justify-center space-x-1 border border-brand-500/30 hover:bg-brand-500/10 cursor-pointer"
+                    >
+                      <Building2 className="w-3 h-3 text-brand-500 flex-shrink-0" />
+                      <span className="truncate">Change Dept</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsMobileDrawerOpen(false);
-                      setSettingsInitialTab('stream');
-                      setIsSettingsOpen(true);
-                    }}
-                    id="mobile-drawer-change-college-btn"
-                    className="px-2 py-1.5 rounded-xl neu-button text-[10px] font-bold text-accent-cyan hover:text-cyan-600 dark:hover:text-white flex items-center justify-center space-x-1 border border-accent-cyan/30 hover:bg-accent-cyan/10 cursor-pointer"
-                  >
-                    <School className="w-3 h-3 text-accent-cyan flex-shrink-0" />
-                    <span className="truncate">Change College</span>
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileDrawerOpen(false);
+                        setSettingsInitialTab('stream');
+                        setIsSettingsOpen(true);
+                      }}
+                      id="mobile-drawer-change-college-btn"
+                      className="px-2 py-1.5 rounded-xl neu-button text-[10px] font-bold text-accent-cyan hover:text-cyan-600 dark:hover:text-white flex items-center justify-center space-x-1 border border-accent-cyan/30 hover:bg-accent-cyan/10 cursor-pointer"
+                    >
+                      <School className="w-3 h-3 text-accent-cyan flex-shrink-0" />
+                      <span className="truncate">Change College</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Navigation Links in Drawer */}

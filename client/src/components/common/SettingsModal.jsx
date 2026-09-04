@@ -33,6 +33,7 @@ import { fetchResources } from '../../redux/resourceSlice.js';
 
 export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) => {
   const dispatch = useDispatch();
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const [activeTab, setActiveTab] = useState(initialTab); // 'stream' | 'security' | 'notifications' | 'uploads'
 
   // Academic Stream State (College, Department, Year & Semester)
@@ -158,11 +159,18 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
 
     try {
       const payload = {
-        college_id: selectedCollegeId || user?.college_id || user?.college?.id,
-        department_id: selectedDeptId || user?.department_id || user?.department?.id,
         academic_year: parseInt(selectedYear, 10),
         semester: parseInt(selectedSem, 10),
       };
+
+      if (isAdmin) {
+        if (selectedCollegeId || user?.college_id || user?.college?.id) {
+          payload.college_id = selectedCollegeId || user?.college_id || user?.college?.id;
+        }
+        if (selectedDeptId || user?.department_id || user?.department?.id) {
+          payload.department_id = selectedDeptId || user?.department_id || user?.department?.id;
+        }
+      }
 
       const response = await api.put('/auth/profile', payload);
       const updatedUser = response.data.data;
@@ -333,88 +341,133 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
               </div>
             )}
 
-            {/* 1. College / University Selector */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <School className="w-3.5 h-3.5 text-brand-500" />
-                  <span>College / Institution</span>
-                </span>
-                <span className="text-[11px] font-bold text-accent-emerald flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent-emerald animate-pulse" />
-                  Active Campus
-                </span>
-              </label>
-              <select
-                value={selectedCollegeId}
-                onChange={(e) => setSelectedCollegeId(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl neu-pressed bg-slate-50 dark:bg-[#101420] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer"
-              >
-                {colleges.length > 0 ? (
-                  colleges.map((col) => (
-                    <option key={col.id} value={col.id}>
-                      {col.name} ({col.code})
-                    </option>
-                  ))
-                ) : (
-                  <option value={user?.college_id || user?.college?.id || ''}>
-                    {user?.college?.name || 'Dhanalakshmi Srinivasan University Trichy (DSU)'}
-                  </option>
-                )}
-              </select>
-            </div>
+            {/* If Admin: Editable College & Department Switchers. If Student: Read-only Enrolled Campus & Dept Card */}
+            {isAdmin ? (
+              <>
+                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-amber-500" />
+                    Administrator Stream Controller
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-300 font-extrabold uppercase">
+                    Admin Only
+                  </span>
+                </div>
 
-            {/* 2. Department / Branch Selector */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-accent-cyan" />
-                  <span>Branch / Department</span>
-                </span>
-                <span className="text-[11px] font-extrabold text-brand-500 dark:text-brand-300">
-                  {departments.find((d) => d.id === selectedDeptId)?.code || user?.department?.code || 'Branch'}
-                </span>
-              </label>
+                {/* 1. College / University Selector (Admin Only) */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <School className="w-3.5 h-3.5 text-brand-500" />
+                      <span>College / Institution</span>
+                    </span>
+                    <span className="text-[11px] font-bold text-accent-emerald flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent-emerald animate-pulse" />
+                      Active Campus
+                    </span>
+                  </label>
+                  <select
+                    value={selectedCollegeId}
+                    onChange={(e) => setSelectedCollegeId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl neu-pressed bg-slate-50 dark:bg-[#101420] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer"
+                  >
+                    {colleges.length > 0 ? (
+                      colleges.map((col) => (
+                        <option key={col.id} value={col.id}>
+                          {col.name} ({col.code})
+                        </option>
+                      ))
+                    ) : (
+                      <option value={user?.college_id || user?.college?.id || ''}>
+                        {user?.college?.name || 'Dhanalakshmi Srinivasan University Trichy (DSU)'}
+                      </option>
+                    )}
+                  </select>
+                </div>
 
-              {/* Grid of 8 Engineering Departments */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {(departments.length > 0
-                  ? departments
-                  : [
-                      { id: 'd1000000-0000-0000-0000-000000000001', name: 'Computer Science and Engineering', code: 'CSE' },
-                      { id: 'd1000000-0000-0000-0000-000000000005', name: 'Artificial Intelligence and Data Science', code: 'AI-DS' },
-                      { id: 'd1000000-0000-0000-0000-000000000006', name: 'Artificial Intelligence and Machine Learning', code: 'AIML' },
-                      { id: 'd1000000-0000-0000-0000-000000000007', name: 'Cybersecurity', code: 'CYB' },
-                      { id: 'd1000000-0000-0000-0000-000000000002', name: 'Electronics and Communication Engineering', code: 'ECE' },
-                      { id: 'd1000000-0000-0000-0000-000000000003', name: 'Electrical and Electronics Engineering', code: 'EEE' },
-                      { id: 'd1000000-0000-0000-0000-000000000004', name: 'Information Technology', code: 'IT' },
-                      { id: 'd1000000-0000-0000-0000-000000000008', name: 'Internet of Things', code: 'IOT' },
-                    ]
-                ).map((dept) => {
-                  const isSelected = selectedDeptId === dept.id || (!selectedDeptId && dept.code === 'CSE');
-                  return (
-                    <button
-                      key={dept.id}
-                      type="button"
-                      onClick={() => setSelectedDeptId(dept.id)}
-                      className={`p-2.5 rounded-xl text-left transition-all cursor-pointer ${
-                        isSelected
-                          ? 'neu-pressed border-2 border-brand-500 bg-brand-500/15 text-brand-600 dark:text-brand-300 font-black shadow-sm'
-                          : 'neu-button text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black">{dept.code}</span>
-                        {isSelected && <Check className="w-3 h-3 text-brand-500" />}
-                      </div>
-                      <span className="text-[10px] block opacity-80 truncate mt-0.5" title={dept.name}>
-                        {dept.name}
-                      </span>
-                    </button>
-                  );
-                })}
+                {/* 2. Department / Branch Selector (Admin Only) */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-accent-cyan" />
+                      <span>Branch / Department</span>
+                    </span>
+                    <span className="text-[11px] font-extrabold text-brand-500 dark:text-brand-300">
+                      {departments.find((d) => d.id === selectedDeptId)?.code || user?.department?.code || 'Branch'}
+                    </span>
+                  </label>
+
+                  {/* Grid of 8 Engineering Departments */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {(departments.length > 0
+                      ? departments
+                      : [
+                          { id: 'd1000000-0000-0000-0000-000000000001', name: 'Computer Science and Engineering', code: 'CSE' },
+                          { id: 'd1000000-0000-0000-0000-000000000005', name: 'Artificial Intelligence and Data Science', code: 'AI-DS' },
+                          { id: 'd1000000-0000-0000-0000-000000000006', name: 'Artificial Intelligence and Machine Learning', code: 'AIML' },
+                          { id: 'd1000000-0000-0000-0000-000000000007', name: 'Cybersecurity', code: 'CYB' },
+                          { id: 'd1000000-0000-0000-0000-000000000002', name: 'Electronics and Communication Engineering', code: 'ECE' },
+                          { id: 'd1000000-0000-0000-0000-000000000003', name: 'Electrical and Electronics Engineering', code: 'EEE' },
+                          { id: 'd1000000-0000-0000-0000-000000000004', name: 'Information Technology', code: 'IT' },
+                          { id: 'd1000000-0000-0000-0000-000000000008', name: 'Internet of Things', code: 'IOT' },
+                        ]
+                    ).map((dept) => {
+                      const isSelected = selectedDeptId === dept.id || (!selectedDeptId && dept.code === 'CSE');
+                      return (
+                        <button
+                          key={dept.id}
+                          type="button"
+                          onClick={() => setSelectedDeptId(dept.id)}
+                          className={`p-2.5 rounded-xl text-left transition-all cursor-pointer ${
+                            isSelected
+                              ? 'neu-pressed border-2 border-brand-500 bg-brand-500/15 text-brand-600 dark:text-brand-300 font-black shadow-sm'
+                              : 'neu-button text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black">{dept.code}</span>
+                            {isSelected && <Check className="w-3 h-3 text-brand-500" />}
+                          </div>
+                          <span className="text-[10px] block opacity-80 truncate mt-0.5" title={dept.name}>
+                            {dept.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Student Locked Enrolled Campus & Department Badge */
+              <div className="p-3.5 rounded-2xl neu-flat bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <School className="w-3.5 h-3.5 text-brand-500" />
+                    Enrolled Academic Details
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                    <Lock className="w-3 h-3" /> Locked
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-950/70 border border-slate-200/60 dark:border-slate-800/80">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Institution</span>
+                    <span className="font-extrabold text-slate-800 dark:text-slate-200 truncate block mt-0.5">
+                      {user?.college?.name || 'DSU Trichy'}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-950/70 border border-slate-200/60 dark:border-slate-800/80">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Department</span>
+                    <span className="font-extrabold text-slate-800 dark:text-slate-200 truncate block mt-0.5">
+                      {user?.department?.name || user?.department?.code || 'Computer Science & Eng (CSE)'}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 italic">
+                  <span>ℹ️ College and Department changes are managed exclusively by campus administrators.</span>
+                </p>
               </div>
-            </div>
+            )}
 
             {/* 3. Academic Year Selector */}
             <div className="space-y-1.5">
@@ -510,12 +563,16 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
                 {streamLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span>Saving Stream, Dept & College...</span>
+                    <span>{isAdmin ? 'Saving Stream, Dept & College...' : 'Updating Year & Semester...'}</span>
                   </>
                 ) : (
                   <>
                     <Check className="w-4 h-4 text-white" />
-                    <span>Save Stream (Dept, College, Year {selectedYear} • Sem {selectedSem})</span>
+                    <span>
+                      {isAdmin
+                        ? `Save Stream (Dept, College, Year ${selectedYear} • Sem ${selectedSem})`
+                        : `Save & Switch to Semester ${selectedSem} (Year ${selectedYear})`}
+                    </span>
                   </>
                 )}
               </button>
