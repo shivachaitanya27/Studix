@@ -171,21 +171,20 @@ export const Navbar = ({ onOpenSupport }) => {
               <span>{t('nav.aiSolver')}</span>
             </Link>
 
-            {/* Admin Operating System Link (Exclusively for authorized admin vshivachaitanya7@gmail.com) */}
+            {/* Admin Operating System Launcher (Exclusively for authorized admin vshivachaitanya7@gmail.com) */}
             {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') &&
               (user?.email || '').toLowerCase().trim() === 'vshivachaitanya7@gmail.com' && (
-                <Link
-                  to="/admin"
+                <a
+                  href={import.meta.env.VITE_ADMIN_APP_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5175' : '/admin')}
+                  target={typeof window !== 'undefined' && window.location.hostname === 'localhost' ? '_blank' : '_self'}
+                  rel="noopener noreferrer"
                   id="nav-admin-link"
-                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center space-x-1.5 ${
-                    location.pathname === '/admin'
-                      ? 'neu-tab-active text-purple-300'
-                      : 'neu-button text-purple-400 hover:text-white border-purple-500/40'
-                  }`}
+                  className="px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center space-x-1.5 neu-button text-purple-400 hover:text-white border-purple-500/40 bg-purple-500/10 hover:bg-purple-600/30 shadow-sm cursor-pointer"
+                  title="Launch Dedicated Admin OS Command Center"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
-                  <span>{t('nav.admin')}</span>
-                </Link>
+                  <span>Admin OS ↗</span>
+                </a>
               )}
           </nav>
         </div>
@@ -726,18 +725,16 @@ export const Navbar = ({ onOpenSupport }) => {
                 </Link>
                 {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') &&
                   (user?.email || '').toLowerCase().trim() === 'vshivachaitanya7@gmail.com' && (
-                    <Link
-                      to="/admin"
+                    <a
+                      href={import.meta.env.VITE_ADMIN_APP_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5175' : '/admin')}
+                      target={typeof window !== 'undefined' && window.location.hostname === 'localhost' ? '_blank' : '_self'}
+                      rel="noopener noreferrer"
                       onClick={() => setIsMobileDrawerOpen(false)}
-                      className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2.5 transition-all ${
-                        location.pathname === '/admin'
-                          ? 'neu-tab-active text-purple-600 dark:text-purple-300 font-black'
-                          : 'neu-button text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-white'
-                      }`}
+                      className="w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2.5 neu-button text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-white"
                     >
                       <ShieldCheck className="w-4 h-4 text-purple-500" />
-                      <span>Admin Panel</span>
-                    </Link>
+                      <span>Admin OS ↗</span>
+                    </a>
                   )}
 
                 <button

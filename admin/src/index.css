@@ -1,0 +1,87 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+:root {
+  --neu-base: #0B0F19;
+  --neu-surface: #111625;
+  --neu-surface-hover: #171E32;
+  --neu-text: #F1F5F9;
+  --neu-text-muted: #64748B;
+  --neu-accent: #9333EA;
+  --neu-accent-glow: rgba(147, 51, 234, 0.35);
+  --neu-border: rgba(255, 255, 255, 0.08);
+
+  --neu-shadow-dark: rgba(0, 0, 0, 0.7);
+  --neu-shadow-light: rgba(255, 255, 255, 0.03);
+  --neu-inset-dark: rgba(0, 0, 0, 0.6);
+  --neu-inset-light: rgba(255, 255, 255, 0.03);
+}
+
+body {
+  background-color: var(--neu-base);
+  color: var(--neu-text);
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Tactile Neumorphic Utilities */
+.neu-flat {
+  background: var(--neu-surface);
+  box-shadow:
+    6px 6px 14px var(--neu-shadow-dark),
+    -4px -4px 10px var(--neu-shadow-light);
+  border: 1px solid var(--neu-border);
+}
+
+.neu-pressed {
+  background: var(--neu-surface);
+  box-shadow:
+    inset 3px 3px 7px var(--neu-inset-dark),
+    inset -2px -2px 5px var(--neu-inset-light);
+  border: 1px solid var(--neu-border);
+}
+
+.neu-button {
+  background: var(--neu-surface);
+  box-shadow:
+    4px 4px 10px var(--neu-shadow-dark),
+    -2px -2px 6px var(--neu-shadow-light);
+  border: 1px solid var(--neu-border);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.neu-button:hover {
+  background: var(--neu-surface-hover);
+  border-color: rgba(147, 51, 234, 0.4);
+  transform: translateY(-1px);
+}
+
+.neu-button:active {
+  box-shadow:
+    inset 2px 2px 5px var(--neu-inset-dark),
+    inset -1px -1px 3px var(--neu-inset-light);
+  transform: translateY(0);
+}
+
+.neu-tab-active {
+  background: linear-gradient(135deg, #7E22CE 0%, #9333EA 100%);
+  box-shadow: 0 4px 15px rgba(147, 51, 234, 0.35);
+  border: 1px solid rgba(216, 180, 254, 0.4);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(11, 15, 25, 0.5);
+}
+::-webkit-scrollbar-thumb {
+  background: #1F293D;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9333EA;
+}

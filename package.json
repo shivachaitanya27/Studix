@@ -6,19 +6,21 @@
   "description": "Studix — AI-Powered Academic Resource Sharing Platform & Admin Operating System",
   "workspaces": [
     "client",
+    "admin",
     "server"
   ],
   "scripts": {
-    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"cyan.bold,magenta.bold\" \"npm run dev:server\" \"npm run dev:client\"",
+    "dev": "concurrently -n \"SERVER,CLIENT,ADMIN\" -c \"cyan.bold,magenta.bold,yellow.bold\" \"npm run dev:server\" \"npm run dev:client\" \"npm run dev:admin\"",
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
+    "dev:admin": "npm --prefix admin run dev",
     "build:client": "node scripts/build.js",
+    "build:admin": "npm --prefix admin run build",
     "build:server": "npm --prefix server run build",
     "build": "node scripts/build.js",
     "bulid": "node scripts/build.js",
     "make-admin": "node server/scripts/createAdmin.js",
-    "install:all": "npm install && npm --prefix server install && npm --prefix client install"
-
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install && npm --prefix admin install"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
