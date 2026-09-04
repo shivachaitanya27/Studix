@@ -10,7 +10,10 @@ export const authService = {
   // Register user & create profile
   async signup({ email, password, fullName, collegeId, departmentId, year, sem }) {
     if (!isCollegeEmail(email)) {
-      throw new Error(getCollegeEmailErrorMessage());
+      const err = new Error(getCollegeEmailErrorMessage());
+      err.code = 'RESTRICTED_DOMAIN';
+      err.status = 403;
+      throw err;
     }
 
     // Auto-detect & link campus stream from email domain (e.g. @college.ac.in, @dsuniversity.ac.in)
@@ -102,6 +105,13 @@ export const authService = {
 
   // Login user
   async login({ email, password }) {
+    if (!isCollegeEmail(email)) {
+      const domainErr = new Error(getCollegeEmailErrorMessage());
+      domainErr.code = 'RESTRICTED_DOMAIN';
+      domainErr.status = 403;
+      throw domainErr;
+    }
+
     let token = null;
     let user = null;
 

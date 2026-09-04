@@ -29,6 +29,8 @@ import {
   Square,
   Filter,
   GraduationCap,
+  Edit3,
+  SlidersHorizontal,
 } from 'lucide-react';
 import api from '../../services/api.js';
 import { selectCurrentUser } from '../../redux/authSlice.js';
@@ -57,6 +59,18 @@ export const AdminDashboard = () => {
   // Bulk Clean / Purge Selection State
   const [selectedResourceIds, setSelectedResourceIds] = useState(new Set());
   const [isBulkCleaning, setIsBulkCleaning] = useState(false);
+  const [isPurgingStream, setIsPurgingStream] = useState(false);
+
+  // Edit Stream Modal State
+  const [editingStreamResource, setEditingStreamResource] = useState(null);
+  const [streamEditForm, setStreamEditForm] = useState({
+    title: '',
+    departmentId: '',
+    academicYear: '1',
+    semester: '1',
+    subjectName: '',
+  });
+  const [isSavingStream, setIsSavingStream] = useState(false);
 
   // Review Modal State
   const [selectedResource, setSelectedResource] = useState(null);
@@ -188,6 +202,78 @@ export const AdminDashboard = () => {
       setIsBulkCleaning(false);
     }
   };
+
+  const handleOpenEditStream = (item) => {
+    setEditingStreamResource(item);
+    setStreamEditForm({
+      title: item.title || '',
+      departmentId: item.department_id || item.department?.id || '',
+      academicYear: String(item.year || 1),
+      semester: String(item.semester || 1),
+      subjectName: item.subject?.name || '',
+    });
+  };
+
+  const handleSaveStreamEdit = async (e) => {
+    e.preventDefault();
+    if (!editingStreamResource) return;
+    setIsSavingStream(true);
+    try {
+      await api.patch(`/admin/resources/${editingStreamResource.id}/stream`, streamEditForm);
+      setActionSuccess(`Successfully updated stream for "${streamEditForm.title || editingStreamResource.title}".`);
+      setEditingStreamResource(null);
+      await fetchData();
+      setTimeout(() => setActionSuccess(''), 4000);
+    } catch (err) {
+      alert('Failed to update file stream: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSavingStream(false);
+    }
+  };
+
+  const handlePurgeSelectedStream = async (matchingItems) => {
+    if (selectedAdminDept === 'ALL' && selectedAdminYear === 'ALL' && selectedAdminSemester === 'ALL') {
+      alert('Please select at least a specific Branch/Department, Year, or Semester to purge a stream.');
+      return;
+    }
+
+    const deptObj = departments.find((d) => d.id === selectedAdminDept);
+    const streamLabel = [
+      deptObj ? deptObj.name : (selectedAdminDept !== 'ALL' ? selectedAdminDept : null),
+      selectedAdminYear !== 'ALL' ? `Year ${selectedAdminYear}` : null,
+      selectedAdminSemester !== 'ALL' ? `Sem ${selectedAdminSemester}` : null,
+    ].filter(Boolean).join(' • ');
+
+    const count = matchingItems.length;
+    if (count === 0) {
+      alert('No files found matching the selected stream to purge.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `⚠️ PERMANENT STREAM PURGE CONFIRMATION:\n\nAre you sure you want to permanently delete ALL ${count} files belonging to the stream:\n\n[ ${streamLabel} ]?\n\nThis will purge all materials uploaded by students in this department/year/sem from the PostgreSQL database and Supabase Storage.`
+    );
+    if (!confirmed) return;
+
+    setIsPurgingStream(true);
+    try {
+      const res = await api.post('/admin/resources/stream-delete', {
+        collegeId: selectedAdminCollege,
+        departmentId: selectedAdminDept,
+        academicYear: selectedAdminYear,
+        semester: selectedAdminSemester,
+      });
+      setActionSuccess(`Purged ${res.data.data?.deletedCount || count} files from stream: ${streamLabel}`);
+      setSelectedResourceIds(new Set());
+      await fetchData();
+      setTimeout(() => setActionSuccess(''), 4000);
+    } catch (err) {
+      alert('Failed to purge stream files: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsPurgingStream(false);
+    }
+  };
+
 
 
   return (
@@ -609,6 +695,40 @@ export const AdminDashboard = () => {
                   </select>
                 </div>
               </div>
+
+              {/* Stream Governance & Targeted Clean Action Bar */}
+              <div className="pt-3 border-t border-slate-700/40 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-xs text-slate-300 flex items-center space-x-2 flex-wrap">
+                  <span className="font-bold text-slate-400">Active Stream:</span>
+                  <span className="px-2 py-0.5 rounded-lg neu-pressed text-brand-300 font-extrabold">
+                    {selectedAdminDept !== 'ALL'
+                      ? (departments.find((d) => d.id === selectedAdminDept)?.name || 'Selected Dept')
+                      : 'All Departments'}
+                    {selectedAdminYear !== 'ALL' ? ` • Year ${selectedAdminYear}` : ''}
+                    {selectedAdminSemester !== 'ALL' ? ` • Sem ${selectedAdminSemester}` : ''}
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    ({filteredCatalog.length} materials in this stream)
+                  </span>
+                </div>
+
+                {(selectedAdminDept !== 'ALL' || selectedAdminYear !== 'ALL' || selectedAdminSemester !== 'ALL') && (
+                  <button
+                    type="button"
+                    disabled={isPurgingStream || filteredCatalog.length === 0}
+                    onClick={() => handlePurgeSelectedStream(filteredCatalog)}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white text-xs font-black flex items-center space-x-2 shadow-glow transition-all cursor-pointer disabled:opacity-50"
+                    title="Permanently delete all files uploaded for this department, year, and semester"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>
+                      {isPurgingStream
+                        ? 'Purging Stream Files...'
+                        : `Purge All Files in this Stream (${filteredCatalog.length})`}
+                    </span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Live Search & Status Filter Controls */}
@@ -790,6 +910,15 @@ export const AdminDashboard = () => {
                         </button>
 
                         <button
+                          onClick={() => handleOpenEditStream(item)}
+                          className="px-3 py-2 rounded-xl neu-button text-xs font-semibold text-brand-300 hover:text-white flex items-center space-x-1.5 border border-brand-500/30 hover:bg-brand-500/20 cursor-pointer"
+                          title="Reassign or edit department, year, semester, or subject for this file"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-brand-400" />
+                          <span>Edit Stream</span>
+                        </button>
+
+                        <button
                           onClick={() => handleDeleteResource(item)}
                           className="px-3.5 py-2 rounded-xl neu-button text-xs font-bold text-rose-400 hover:text-white flex items-center space-x-1.5 border border-rose-500/30 hover:bg-rose-600/30 cursor-pointer"
                           title="Permanently Purge Resource"
@@ -909,6 +1038,135 @@ export const AdminDashboard = () => {
                 Confirm Rejection
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Edit Stream Modal */}
+      {editingStreamResource && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+            onClick={() => !isSavingStream && setEditingStreamResource(null)}
+          />
+          <div className="relative w-full max-w-lg rounded-3xl neu-flat p-6 sm:p-7 z-10 space-y-4 border border-brand-500/30 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-700/40">
+              <div className="flex items-center space-x-2 text-sm font-black text-white">
+                <Edit3 className="w-4 h-4 text-brand-400" />
+                <span>Edit Resource Academic Stream</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => !isSavingStream && setEditingStreamResource(null)}
+                className="p-1.5 rounded-lg neu-button text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveStreamEdit} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  Document Title
+                </label>
+                <input
+                  type="text"
+                  value={streamEditForm.title}
+                  onChange={(e) => setStreamEditForm((prev) => ({ ...prev, title: e.target.value }))}
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  Target Branch / Department
+                </label>
+                <select
+                  value={streamEditForm.departmentId}
+                  onChange={(e) => setStreamEditForm((prev) => ({ ...prev, departmentId: e.target.value }))}
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 focus:outline-none"
+                >
+                  <option value="">-- Choose Branch --</option>
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name} ({d.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Academic Year
+                  </label>
+                  <select
+                    value={streamEditForm.academicYear}
+                    onChange={(e) => setStreamEditForm((prev) => ({ ...prev, academicYear: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 focus:outline-none"
+                  >
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Semester
+                  </label>
+                  <select
+                    value={streamEditForm.semester}
+                    onChange={(e) => setStreamEditForm((prev) => ({ ...prev, semester: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 focus:outline-none"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                      <option key={s} value={s}>
+                        Semester {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  Subject Name
+                </label>
+                <input
+                  type="text"
+                  value={streamEditForm.subjectName}
+                  onChange={(e) => setStreamEditForm((prev) => ({ ...prev, subjectName: e.target.value }))}
+                  placeholder="e.g. Data Structures & Algorithms"
+                  className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="p-3 rounded-xl bg-brand-500/10 border border-brand-500/20 text-slate-300 text-[11px] leading-relaxed">
+                Reassigning the stream will move this resource to the selected Department, Year, and Semester across student syllabus trees and exam solver caches.
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-2">
+                <button
+                  type="button"
+                  disabled={isSavingStream}
+                  onClick={() => setEditingStreamResource(null)}
+                  className="px-4 py-2 rounded-xl neu-button text-xs font-semibold text-slate-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingStream}
+                  className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-extrabold shadow-glow flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 transition-all"
+                >
+                  <span>{isSavingStream ? 'Saving...' : 'Save Stream Changes'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

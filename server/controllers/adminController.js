@@ -141,7 +141,53 @@ export const adminController = {
       });
     }
   },
+
+  // POST /api/v1/admin/resources/stream-delete
+  async deleteStream(req, res) {
+    try {
+      const { collegeId, departmentId, academicYear, semester } = req.body;
+      const result = await adminService.deleteStreamResources(
+        { collegeId, departmentId, academicYear, semester },
+        req.user.id
+      );
+      return res.status(200).json({
+        success: true,
+        message: `Successfully purged ${result.deletedCount} files from the selected stream.`,
+        data: result,
+      });
+    } catch (error) {
+      const status = error.status || 500;
+      return res.status(status).json({
+        success: false,
+        message: error.message || 'Failed to delete stream files.',
+      });
+    }
+  },
+
+  // PATCH /api/v1/admin/resources/:id/stream
+  async updateStream(req, res) {
+    try {
+      const { departmentId, academicYear, semester, title, subjectName } = req.body;
+      const updated = await adminService.updateResourceStream(
+        req.params.id,
+        { departmentId, academicYear, semester, title, subjectName },
+        req.user.id
+      );
+      return res.status(200).json({
+        success: true,
+        message: 'Resource stream updated successfully.',
+        data: updated,
+      });
+    } catch (error) {
+      const status = error.status || 500;
+      return res.status(status).json({
+        success: false,
+        message: error.message || 'Failed to update resource stream.',
+      });
+    }
+  },
 };
 
 export default adminController;
+
 

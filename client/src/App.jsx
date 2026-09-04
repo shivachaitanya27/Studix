@@ -62,6 +62,9 @@ import { syncFromUser } from './redux/academicSlice.js';
 export const App = () => {
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const [showInitialSplash, setShowInitialSplash] = React.useState(() => {
+    return !sessionStorage.getItem('studix_splash_seen');
+  });
 
   // Initialize theme from localStorage immediately so /login, /signup, etc. respect user's theme choice
   useEffect(() => {
@@ -81,11 +84,16 @@ export const App = () => {
     }
   }, [isAuthenticated, dispatch]);
 
+  if (showInitialSplash) {
+    return <SplashScreen onFinish={() => setShowInitialSplash(false)} />;
+  }
+
   return (
     <Routes>
       {/* Entrance Flow */}
-      <Route path="/" element={<SplashScreen />} />
+      <Route path="/" element={<SplashScreen onFinish={() => setShowInitialSplash(false)} />} />
       <Route path="/welcome" element={<WelcomeScreen />} />
+
 
       {/* Auth Layout & Flow */}
       <Route path="/auth/callback" element={<AuthCallback />} />

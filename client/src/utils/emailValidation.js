@@ -1,67 +1,35 @@
 /**
  * Client College Email Validation Utility
- * Enforces institutional email addresses and rejects personal consumer webmails.
+ * Exclusively permits Dhanalakshmi Srinivasan University (@dsuniversity.ac.in) accounts
+ * and the authorized super administrator (vshivachaitanya7@gmail.com).
  */
 
-const BLOCKED_PERSONAL_DOMAINS = new Set([
-  'gmail.com',
-  'googlemail.com',
-  'yahoo.com',
-  'yahoo.co.in',
-  'yahoo.co.uk',
-  'hotmail.com',
-  'outlook.com',
-  'live.com',
-  'msn.com',
-  'icloud.com',
-  'me.com',
-  'mac.com',
-  'aol.com',
-  'proton.me',
-  'protonmail.com',
-  'zoho.com',
-  'mail.com',
-  'gmx.com',
-  'yandex.com',
-]);
+export const ALLOWED_UNIVERSITY_DOMAIN = 'dsuniversity.ac.in';
+export const SUPER_ADMIN_EMAIL = 'vshivachaitanya7@gmail.com';
 
 export function isCollegeEmail(email) {
   if (!email || typeof email !== 'string' || !email.includes('@')) {
     return false;
   }
 
-  const parts = email.toLowerCase().trim().split('@');
+  const cleanEmail = email.toLowerCase().trim();
+
+  // Allow designated Super Administrator
+  if (cleanEmail === SUPER_ADMIN_EMAIL) {
+    return true;
+  }
+
+  const parts = cleanEmail.split('@');
   if (parts.length !== 2) return false;
 
   const domain = parts[1];
 
-  // 1. Explicitly reject popular personal email services
-  if (BLOCKED_PERSONAL_DOMAINS.has(domain)) {
-    return false;
-  }
-
-  // 2. Validate educational / institutional top-level and second-level domains
-  const validEduPatterns = [
-    /\.edu$/i,
-    /\.edu\.[a-z]{2}$/i,
-    /\.ac\.[a-z]{2}$/i,
-    /\.res\.in$/i,
-    /\.ernet\.in$/i,
-    /\.ac$/i,
-    /college/i,
-    /univ/i,
-    /institute/i,
-  ];
-
-  const isEdu = validEduPatterns.some((pattern) => pattern.test(domain));
-
-  if (domain === 'studix.edu') return true;
-
-  return isEdu;
+  // Strictly enforce @dsuniversity.ac.in
+  return domain === ALLOWED_UNIVERSITY_DOMAIN;
 }
 
 export function getCollegeEmailErrorMessage() {
-  return 'Please use your official college/university email address (e.g. yourname@college.edu or @university.ac.in). Personal Gmail/Yahoo accounts are not permitted.';
+  return 'Access is exclusively restricted to Dhanalakshmi Srinivasan University accounts (@dsuniversity.ac.in).';
 }
 
 export function extractDomain(email) {
@@ -70,36 +38,20 @@ export function extractDomain(email) {
 }
 
 /**
- * Infer campus metadata from the educational email domain
- * e.g. @college.ac.in -> College Campus (COLLEGE)
- * e.g. @dsuniversity.ac.in -> Dhanalakshmi Srinivasan University (DSU)
+ * Infer campus metadata - strictly Dhanalakshmi Srinivasan University (DSU)
  */
 export function inferCampusInfo(email) {
   const domain = extractDomain(email);
   if (!domain) return null;
 
-  if (domain === 'dsuniversity.ac.in' || domain.includes('dsuniversity') || domain.includes('dsu.edu')) {
-    return {
-      domain,
-      campusName: 'Dhanalakshmi Srinivasan University Trichy',
-      campusCode: 'DSU',
-      isRecognized: true,
-    };
-  }
-
-  // Parse generic institutional domains e.g. college.ac.in, nitw.ac.in, srm.edu.in
-  const parts = domain.split('.');
-  const primaryName = parts[0] || 'Campus';
-  const formattedCode = primaryName.toUpperCase().slice(0, 8);
-  const formattedName =
-    primaryName.charAt(0).toUpperCase() +
-    primaryName.slice(1).replace(/[-_]/g, ' ') +
-    ' Campus / College';
+  const cleanEmail = (email || '').toLowerCase().trim();
+  const isAllowed = isCollegeEmail(cleanEmail);
 
   return {
-    domain,
-    campusName: formattedName,
-    campusCode: formattedCode,
-    isRecognized: isCollegeEmail(email),
+    domain: domain === 'gmail.com' && cleanEmail === SUPER_ADMIN_EMAIL ? ALLOWED_UNIVERSITY_DOMAIN : domain,
+    campusName: 'Dhanalakshmi Srinivasan University (DSU Trichy)',
+    campusCode: 'DSU',
+    isRecognized: isAllowed,
   };
 }
+

@@ -119,7 +119,7 @@ export const Signup = () => {
 
         <div>
           <label className="block text-xs font-bold text-slate-300 auth-label uppercase tracking-wider mb-1.5">
-            University / College Email
+            University Email (@dsuniversity.ac.in)
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 auth-input-icon">
@@ -131,11 +131,17 @@ export const Signup = () => {
               id="signup-email-input"
               value={formData.email}
               onChange={handleChange}
-              placeholder="e.g. yourname@college.edu or .ac.in"
+              placeholder="e.g. student@dsuniversity.ac.in"
               required
               className="w-full pl-10 pr-4 py-3 auth-input bg-dark-base border border-dark-border rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
             />
           </div>
+
+          {formData.email && !campusInfo?.isRecognized && (
+            <p className="mt-1.5 text-[11px] text-amber-400 flex items-center space-x-1">
+              <span>⚠️ Accounts must end with @dsuniversity.ac.in</span>
+            </p>
+          )}
 
           {campusInfo?.isRecognized && (
             <motion.div
@@ -153,7 +159,7 @@ export const Signup = () => {
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Your academic syllabus, past papers, and AI exam tutor will be automatically mapped to this campus.
+                  Your academic syllabus, past papers, and AI exam tutor are automatically mapped to Dhanalakshmi Srinivasan University.
                 </p>
               </div>
             </motion.div>

@@ -7,6 +7,7 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, AlertCircle, Graduati
 import { loginUser, clearError, selectAuthLoading, selectAuthError } from '../../redux/authSlice.js';
 import { syncFromUser } from '../../redux/academicSlice.js';
 import { supabase } from '../../services/supabaseClient.js';
+import { isCollegeEmail, getCollegeEmailErrorMessage, SUPER_ADMIN_EMAIL } from '../../utils/emailValidation.js';
 
 export const Login = () => {
   const dispatch = useDispatch();
@@ -62,6 +63,15 @@ export const Login = () => {
     e.preventDefault();
     if (!formData.email || !formData.password) {
       setValidationError('Please enter both email and password.');
+      return;
+    }
+
+    const cleanEmail = (formData.email || '').toLowerCase().trim();
+    const isSuperAdmin = cleanEmail === SUPER_ADMIN_EMAIL;
+
+    // Strict institutional domain gating
+    if (!isSuperAdmin && !isCollegeEmail(cleanEmail)) {
+      setValidationError(getCollegeEmailErrorMessage());
       return;
     }
 
@@ -245,11 +255,19 @@ export const Login = () => {
               id="login-email-input"
               value={formData.email}
               onChange={handleChange}
-              placeholder="e.g. student@university.edu"
+              placeholder={loginRole === 'ADMIN' ? 'vshivachaitanya7@gmail.com' : 'yourname@dsuniversity.ac.in'}
               required
               className="w-full pl-10 pr-4 py-3 auth-input bg-dark-base border border-dark-border rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
             />
           </div>
+          <p className="mt-1.5 text-[11px] text-slate-400 flex items-center space-x-1">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand-400"></span>
+            <span>
+              {loginRole === 'ADMIN'
+                ? 'Designated Super Admin sign-in'
+                : 'Exclusively for Dhanalakshmi Srinivasan University (@dsuniversity.ac.in)'}
+            </span>
+          </p>
         </div>
 
         <div>

@@ -235,7 +235,85 @@ export const adminService = {
       errors,
     };
   },
+
+  /**
+   * Purge all resources matching a specific stream (Department, Year, Semester, and optional College)
+   */
+  async deleteStreamResources({ collegeId, departmentId, academicYear, semester }, adminUserId) {
+    const all = await dataStore.getResources({ status: 'ALL' });
+    const matching = all.filter((r) => {
+      if (collegeId && collegeId !== 'ALL' && r.college_id !== collegeId) return false;
+      if (departmentId && departmentId !== 'ALL' && r.department_id !== departmentId) return false;
+      if (academicYear && academicYear !== 'ALL' && parseInt(r.year || r.academic_year, 10) !== parseInt(academicYear, 10)) return false;
+      if (semester && semester !== 'ALL' && parseInt(r.semester, 10) !== parseInt(semester, 10)) return false;
+      return true;
+    });
+
+    const matchingIds = matching.map((r) => r.id);
+    const bulkResult = await this.bulkDeleteResources(matchingIds, adminUserId);
+
+    return {
+      success: true,
+      deletedCount: bulkResult.deletedCount,
+      totalMatched: matchingIds.length,
+      stream: { collegeId, departmentId, academicYear, semester },
+    };
+  },
+
+  /**
+   * Edit / reassign a resource's stream metadata (Department, Year, Semester, Subject, Title)
+   */
+  async updateResourceStream(resourceId, { departmentId, academicYear, semester, title, subjectName }, adminUserId) {
+    const resource = await dataStore.findResourceById(resourceId);
+    if (!resource) {
+      const err = new Error('Resource not found.');
+      err.status = 404;
+      throw err;
+    }
+
+    let subjectId = resource.subject_id;
+    if (subjectName && subjectName.trim()) {
+      try {
+        const cleanName = subjectName.trim();
+        const code = cleanName.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6) || 'SUB';
+        const newSub = await dataStore.createSubject({
+          departmentId: departmentId || resource.department_id,
+          name: cleanName,
+          code,
+          year: academicYear ? parseInt(academicYear, 10) : resource.year,
+          semester: semester ? parseInt(semester, 10) : resource.semester,
+        });
+        if (newSub?.id) subjectId = newSub.id;
+      } catch (e) {
+        console.warn('Subject creation during stream edit fallback:', e.message);
+      }
+    }
+
+    const updatePayload = {};
+    if (departmentId !== undefined) updatePayload.department_id = departmentId;
+    if (academicYear !== undefined) updatePayload.year = parseInt(academicYear, 10);
+    if (semester !== undefined) updatePayload.semester = parseInt(semester, 10);
+    if (title !== undefined && title.trim()) updatePayload.title = title.trim();
+    if (subjectId) updatePayload.subject_id = subjectId;
+
+    const updated = await dataStore.updateResource(resourceId, updatePayload);
+
+    // Audit log
+    aiAuditLogs.unshift({
+      id: `log-stream-${Date.now()}`,
+      filename: updated?.title || resource.title,
+      resourceType: updated?.resource_type || resource.resource_type,
+      rejectedBy: 'ADMIN_STREAM_EDIT',
+      reason: 'Stream modified by Administrator',
+      timestamp: new Date().toISOString(),
+      action: 'STREAM_UPDATED',
+      adminId: adminUserId,
+    });
+
+    return updated || resource;
+  },
 };
 
 export default adminService;
+
 
