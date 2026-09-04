@@ -21,6 +21,9 @@ class MemoryStore {
     this.aiMessages = [];
     this.bookmarks = [...initialBookmarks];
     this.notifications = [];
+    this.supportTickets = [];
+    this.supportMessages = [];
+    this.userFeedbacks = [];
   }
 
   async getColleges() {
@@ -435,6 +438,115 @@ class MemoryStore {
         subject: subject ? { id: subject.id, name: subject.name, code: subject.code } : null,
       };
     });
+  }
+
+  // --- Support Tickets & Messages ---
+  async createSupportTicket(data) {
+    const ticketId = `ticket-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const newTicket = {
+      id: ticketId,
+      user_id: data.userId,
+      user_name: data.userName || 'Student',
+      user_email: data.userEmail || '',
+      college_name: data.collegeName || 'Campus',
+      department_name: data.departmentName || 'General',
+      subject: data.subject || 'Student Inquiry',
+      category: data.category || 'General',
+      status: 'OPEN',
+      last_message: data.initialMessage || '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      messages: [],
+    };
+    if (data.initialMessage) {
+      newTicket.messages.push({
+        id: `msg-${Date.now()}-1`,
+        ticket_id: ticketId,
+        sender_id: data.userId,
+        sender_role: 'STUDENT',
+        sender_name: data.userName || 'Student',
+        content: data.initialMessage,
+        created_at: new Date().toISOString(),
+      });
+    }
+    this.supportTickets.unshift(newTicket);
+    return newTicket;
+  }
+
+  async getUserTickets(userId) {
+    return this.supportTickets.filter((t) => String(t.user_id) === String(userId));
+  }
+
+  async getAllTickets({ status, search } = {}) {
+    let tickets = [...this.supportTickets];
+    if (status && status !== 'ALL') {
+      tickets = tickets.filter((t) => (t.status || '').toUpperCase() === status.toUpperCase());
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      tickets = tickets.filter(
+        (t) =>
+          t.subject?.toLowerCase().includes(q) ||
+          t.user_name?.toLowerCase().includes(q) ||
+          t.user_email?.toLowerCase().includes(q) ||
+          t.department_name?.toLowerCase().includes(q)
+      );
+    }
+    return tickets;
+  }
+
+  async getTicketById(ticketId) {
+    return this.supportTickets.find((t) => String(t.id) === String(ticketId)) || null;
+  }
+
+  async addTicketMessage(ticketId, { senderId, senderRole, senderName, content }) {
+    const ticket = await this.getTicketById(ticketId);
+    if (!ticket) throw new Error('Support ticket not found');
+    const msg = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      ticket_id: ticketId,
+      sender_id: senderId,
+      sender_role: senderRole || 'STUDENT',
+      sender_name: senderName || (senderRole === 'ADMIN' ? 'Shiva Chaitanya (Admin)' : 'Student'),
+      content,
+      created_at: new Date().toISOString(),
+    };
+    if (!ticket.messages) ticket.messages = [];
+    ticket.messages.push(msg);
+    ticket.last_message = content;
+    ticket.updated_at = new Date().toISOString();
+    return msg;
+  }
+
+  async updateTicketStatus(ticketId, status) {
+    const ticket = await this.getTicketById(ticketId);
+    if (!ticket) throw new Error('Support ticket not found');
+    ticket.status = status;
+    ticket.updated_at = new Date().toISOString();
+    return ticket;
+  }
+
+  // --- First-Time User Feedback ---
+  async createFeedback(data) {
+    const feedbackId = `fb-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const newFeedback = {
+      id: feedbackId,
+      user_id: data.userId || null,
+      user_name: data.userName || 'Anonymous Student',
+      user_email: data.userEmail || '',
+      college_name: data.collegeName || '',
+      department_name: data.departmentName || '',
+      rating: Number(data.rating) || 5,
+      tags: Array.isArray(data.tags) ? data.tags : [],
+      comment: data.comment || '',
+      created_at: new Date().toISOString(),
+    };
+    this.userFeedbacks.unshift(newFeedback);
+    return newFeedback;
+  }
+
+  async getAllFeedbacks() {
+    return [...this.userFeedbacks];
   }
 }
 
@@ -1170,6 +1282,261 @@ export const dataStore = {
     }
     return memoryStore.getUserBookmarks(userId);
   },
+
+  // ==========================================
+  // STUDENT SUPPORT TICKETS & MESSAGING
+  // ==========================================
+  async createSupportTicket(ticketData) {
+    if (isSupabaseConfigured && supabaseAdmin) {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('support_tickets')
+          .insert([
+            {
+              user_id: ticketData.userId,
+              user_name: ticketData.userName || 'Student',
+              user_email: ticketData.userEmail || '',
+              college_name: ticketData.collegeName || '',
+              department_name: ticketData.departmentName || '',
+              subject: ticketData.subject,
+              category: ticketData.category || 'General',
+              status: 'OPEN',
+              last_message: ticketData.initialMessage || '',
+            },
+          ])
+          .select()
+          .maybeSingle();
+
+        if (!error && data) {
+          if (ticketData.initialMessage) {
+            await supabaseAdmin.from('support_messages').insert([
+              {
+                ticket_id: data.id,
+                sender_id: ticketData.userId,
+                sender_role: 'STUDENT',
+                sender_name: ticketData.userName || 'Student',
+                content: ticketData.initialMessage,
+              },
+            ]);
+          }
+          // Also sync memory store
+          await memoryStore.createSupportTicket({ ...ticketData, id: data.id });
+          return this.getTicketById(data.id);
+        }
+      } catch (err) {
+        console.warn('Supabase createSupportTicket notice:', err.message);
+      }
+    }
+    return memoryStore.createSupportTicket(ticketData);
+  },
+
+  async getUserTickets(userId) {
+    if (isSupabaseConfigured && supabaseAdmin) {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('support_tickets')
+          .select('*, messages:support_messages(*)')
+          .eq('user_id', userId)
+          .order('updated_at', { ascending: false });
+
+        if (!error && data) {
+          return data.map((t) => ({
+            ...t,
+            messages: (t.messages || []).sort(
+              (a, b) => new Date(a.created_at) - new Date(b.created_at)
+            ),
+          }));
+        }
+      } catch (err) {
+        console.warn('Supabase getUserTickets notice:', err.message);
+      }
+    }
+    return memoryStore.getUserTickets(userId);
+  },
+
+  async getAllTickets({ status, search } = {}) {
+    if (isSupabaseConfigured && supabaseAdmin) {
+      try {
+        let query = supabaseAdmin
+          .from('support_tickets')
+          .select('*, messages:support_messages(*)')
+          .order('updated_at', { ascending: false });
+
+        if (status && status !== 'ALL') {
+          query = query.eq('status', status.toUpperCase());
+        }
+
+        const { data, error } = await query;
+        if (!error && data) {
+          let results = data.map((t) => ({
+            ...t,
+            messages: (t.messages || []).sort(
+              (a, b) => new Date(a.created_at) - new Date(b.created_at)
+            ),
+          }));
+
+          if (search) {
+            const q = search.toLowerCase();
+            results = results.filter(
+              (t) =>
+                t.subject?.toLowerCase().includes(q) ||
+                t.user_name?.toLowerCase().includes(q) ||
+                t.user_email?.toLowerCase().includes(q) ||
+                t.department_name?.toLowerCase().includes(q)
+            );
+          }
+          return results;
+        }
+      } catch (err) {
+        console.warn('Supabase getAllTickets notice:', err.message);
+      }
+    }
+    return memoryStore.getAllTickets({ status, search });
+  },
+
+  async getTicketById(ticketId) {
+    if (isSupabaseConfigured && supabaseAdmin) {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('support_tickets')
+          .select('*, messages:support_messages(*)')
+          .eq('id', ticketId)
+          .maybeSingle();
+
+        if (!error && data) {
+          return {
+            ...data,
+            messages: (data.messages || []).sort(
+              (a, b) => new Date(a.created_at) - new Date(b.created_at)
+            ),
+          };
+        }
+      } catch (err) {
+        console.warn('Supabase getTicketById notice:', err.message);
+      }
+    }
+    return memoryStore.getTicketById(ticketId);
+  },
+
+  async addTicketMessage(ticketId, { senderId, senderRole, senderName, content }) {
+    if (isSupabaseConfigured && supabaseAdmin) {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('support_messages')
+          .insert([
+            {
+              ticket_id: ticketId,
+              sender_id: senderId,
+              sender_role: senderRole || 'STUDENT',
+              sender_name: senderName || (senderRole === 'ADMIN' ? 'Shiva Chaitanya (Admin)' : 'Student'),
+              content,
+            },
+          ])
+          .select()
+          .maybeSingle();
+
+        if (!error && data) {
+          // Update last_message and updated_at on ticket
+          await supabaseAdmin
+            .from('support_tickets')
+            .update({
+              last_message: content,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', ticketId);
+
+          // Sync in memoryStore if present
+          try {
+            await memoryStore.addTicketMessage(ticketId, { senderId, senderRole, senderName, content });
+          } catch (_) {}
+
+          return data;
+        }
+      } catch (err) {
+        console.warn('Supabase addTicketMessage notice:', err.message);
+      }
+    }
+    return memoryStore.addTicketMessage(ticketId, { senderId, senderRole, senderName, content });
+  },
+
+  async updateTicketStatus(ticketId, status) {
+    if (isSupabaseConfigured && supabaseAdmin) {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('support_tickets')
+          .update({
+            status: status.toUpperCase(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', ticketId)
+          .select()
+          .maybeSingle();
+
+        if (!error && data) {
+          try {
+            await memoryStore.updateTicketStatus(ticketId, status.toUpperCase());
+          } catch (_) {}
+          return data;
+        }
+      } catch (err) {
+        console.warn('Supabase updateTicketStatus notice:', err.message);
+      }
+    }
+    return memoryStore.updateTicketStatus(ticketId, status.toUpperCase());
+  },
+
+  // ==========================================
+  // FIRST-TIME USER EXIT FEEDBACK
+  // ==========================================
+  async createFeedback(feedbackData) {
+    if (isSupabaseConfigured && supabaseAdmin) {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('user_feedbacks')
+          .insert([
+            {
+              user_id: feedbackData.userId || null,
+              user_name: feedbackData.userName || 'Anonymous Student',
+              user_email: feedbackData.userEmail || '',
+              college_name: feedbackData.collegeName || '',
+              department_name: feedbackData.departmentName || '',
+              rating: Number(feedbackData.rating) || 5,
+              tags: Array.isArray(feedbackData.tags) ? feedbackData.tags : [],
+              comment: feedbackData.comment || '',
+            },
+          ])
+          .select()
+          .maybeSingle();
+
+        if (!error && data) {
+          await memoryStore.createFeedback(feedbackData);
+          return data;
+        }
+      } catch (err) {
+        console.warn('Supabase createFeedback notice:', err.message);
+      }
+    }
+    return memoryStore.createFeedback(feedbackData);
+  },
+
+  async getAllFeedbacks() {
+    if (isSupabaseConfigured && supabaseAdmin) {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('user_feedbacks')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          return data;
+        }
+      } catch (err) {
+        console.warn('Supabase getAllFeedbacks notice:', err.message);
+      }
+    }
+    return memoryStore.getAllFeedbacks();
+  },
 };
+
 
 

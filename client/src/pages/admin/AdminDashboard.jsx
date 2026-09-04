@@ -33,6 +33,11 @@ import {
   SlidersHorizontal,
   Users,
   School,
+  Headphones,
+  MessageSquareHeart,
+  Send,
+  Star,
+  RefreshCw,
 } from 'lucide-react';
 import api from '../../services/api.js';
 import { selectCurrentUser } from '../../redux/authSlice.js';
@@ -41,12 +46,26 @@ export const AdminDashboard = () => {
   const navigate = useNavigate();
   const user = useSelector(selectCurrentUser);
 
-  const [activeTab, setActiveTab] = useState('queue'); // 'queue' | 'users' | 'analytics' | 'logs' | 'all'
+  const [activeTab, setActiveTab] = useState('queue'); // 'queue' | 'users' | 'support' | 'feedback' | 'analytics' | 'logs' | 'all'
   const [queue, setQueue] = useState([]);
   const [logs, setLogs] = useState([]);
   const [allResources, setAllResources] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Student Support State
+  const [supportTickets, setSupportTickets] = useState([]);
+  const [activeSupportTicket, setActiveSupportTicket] = useState(null);
+  const [adminReplyText, setAdminReplyText] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
+  const [supportFilterStatus, setSupportFilterStatus] = useState('ALL');
+  const [supportSearch, setSupportSearch] = useState('');
+
+  // First-Time Feedback State
+  const [feedbacksData, setFeedbacksData] = useState({
+    metrics: { total: 0, avgRating: 0, distribution: {}, popularTags: [] },
+    feedbacks: [],
+  });
 
   // Multi-Tenant Global College & Stream Filter State (Exclusively for Admin)
   const [colleges, setColleges] = useState([]);
@@ -110,7 +129,7 @@ export const AdminDashboard = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [queueRes, logsRes, analyticsRes, allRes, collegesRes, deptsRes, usersRes] = await Promise.all([
+      const [queueRes, logsRes, analyticsRes, allRes, collegesRes, deptsRes, usersRes, supportRes, feedbackRes] = await Promise.all([
         api.get('/admin/moderation/queue'),
         api.get('/admin/moderation/logs'),
         api.get('/admin/analytics'),
@@ -118,6 +137,8 @@ export const AdminDashboard = () => {
         api.get('/academic/colleges').catch(() => api.get('/colleges')).catch(() => ({ data: { data: [] } })),
         api.get('/academic/departments').catch(() => api.get('/departments')).catch(() => ({ data: { data: [] } })),
         api.get('/admin/users').catch(() => ({ data: { data: [] } })),
+        api.get('/support/admin/tickets').catch(() => ({ data: { data: [] } })),
+        api.get('/feedback/admin').catch(() => ({ data: { data: { feedbacks: [], metrics: {} } } })),
       ]);
       setQueue(queueRes.data.data || []);
       setLogs(logsRes.data.data || []);
@@ -126,6 +147,8 @@ export const AdminDashboard = () => {
       setColleges(collegesRes.data.data || []);
       setDepartments(deptsRes.data.data || []);
       setUsersList(usersRes.data.data || []);
+      setSupportTickets(supportRes.data.data || []);
+      setFeedbacksData(feedbackRes.data.data || { metrics: { total: 0, avgRating: 0, distribution: {}, popularTags: [] }, feedbacks: [] });
     } catch (err) {
       console.error('Failed to load admin data:', err);
     } finally {
@@ -136,6 +159,52 @@ export const AdminDashboard = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleSendAdminReply = async (e) => {
+    e.preventDefault();
+    if (!adminReplyText.trim() || !activeSupportTicket?.id || isSendingReply) return;
+    const text = adminReplyText.trim();
+    setAdminReplyText('');
+    setIsSendingReply(true);
+    try {
+      const res = await api.post(`/support/tickets/${activeSupportTicket.id}/messages`, {
+        content: text,
+      });
+      if (res.data?.success) {
+        const newMsg = res.data.data;
+        setActiveSupportTicket((prev) => ({
+          ...prev,
+          messages: [...(prev?.messages || []), newMsg],
+          last_message: text,
+        }));
+        setSupportTickets((prev) =>
+          prev.map((t) =>
+            t.id === activeSupportTicket.id
+              ? { ...t, last_message: text, messages: [...(t.messages || []), newMsg] }
+              : t
+          )
+        );
+      }
+    } catch (err) {
+      alert('Failed to send reply: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
+
+  const handleUpdateTicketStatus = async (ticketId, newStatus) => {
+    try {
+      await api.patch(`/support/admin/tickets/${ticketId}/status`, { status: newStatus });
+      setActiveSupportTicket((prev) => (prev?.id === ticketId ? { ...prev, status: newStatus } : prev));
+      setSupportTickets((prev) =>
+        prev.map((t) => (t.id === ticketId ? { ...t, status: newStatus } : t))
+      );
+      setActionSuccess(`Ticket status updated to ${newStatus}`);
+      setTimeout(() => setActionSuccess(''), 3000);
+    } catch (err) {
+      alert('Failed to update ticket status: ' + (err.response?.data?.message || err.message));
+    }
+  };
 
   const handleSaveUserStream = async (e) => {
     e.preventDefault();
@@ -408,6 +477,38 @@ export const AdminDashboard = () => {
           <span>AI Rejection Audit Logs</span>
           <span className="px-1.5 py-0.5 rounded-full text-[10px] neu-pressed text-amber-300 font-black">
             {logs.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('support')}
+          id="admin-tab-support"
+          className={`px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center space-x-2 transition-all ${
+            activeTab === 'support'
+              ? 'neu-tab-active text-white'
+              : 'neu-button text-slate-400 hover:text-white'
+          }`}
+        >
+          <Headphones className="w-4 h-4 text-purple-400" />
+          <span>Student Support & Chat</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] neu-pressed text-purple-300 font-black">
+            {supportTickets.filter((t) => t.status !== 'RESOLVED').length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('feedback')}
+          id="admin-tab-feedback"
+          className={`px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center space-x-2 transition-all ${
+            activeTab === 'feedback'
+              ? 'neu-tab-active text-white'
+              : 'neu-button text-slate-400 hover:text-white'
+          }`}
+        >
+          <MessageSquareHeart className="w-4 h-4 text-pink-400" />
+          <span>Student Feedback</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] neu-pressed text-pink-300 font-black">
+            {feedbacksData?.feedbacks?.length || 0}
           </span>
         </button>
 
@@ -845,6 +946,386 @@ export const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* TAB: Student Support & Live Chat */}
+      {activeTab === 'support' && (() => {
+        const filteredTickets = supportTickets.filter((t) => {
+          const matchStatus =
+            supportFilterStatus === 'ALL' ||
+            (t.status || '').toUpperCase() === supportFilterStatus.toUpperCase();
+          const q = supportSearch.toLowerCase().trim();
+          const matchSearch =
+            !q ||
+            t.subject?.toLowerCase().includes(q) ||
+            t.user_name?.toLowerCase().includes(q) ||
+            t.user_email?.toLowerCase().includes(q) ||
+            t.department_name?.toLowerCase().includes(q);
+          return matchStatus && matchSearch;
+        });
+
+        return (
+          <div className="space-y-4 animate-fade-in">
+            {/* Filter and Search Bar */}
+            <div className="p-4 rounded-2xl neu-flat flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED'].map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => setSupportFilterStatus(st)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      supportFilterStatus === st
+                        ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                        : 'neu-button text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {st === 'ALL' ? 'All Inquiries' : st.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={supportSearch}
+                    onChange={(e) => setSupportSearch(e.target.value)}
+                    placeholder="Search by student, subject, branch..."
+                    className="pl-8 pr-3 py-1.5 rounded-xl neu-pressed text-xs text-slate-200 placeholder-slate-500 focus:outline-none w-56 sm:w-64"
+                  />
+                </div>
+                <button
+                  onClick={fetchData}
+                  className="p-2 rounded-xl neu-button text-slate-400 hover:text-purple-400 transition-colors"
+                  title="Refresh inquiries"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Split Screen: Tickets List on Left, Active Conversation on Right */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+              {/* Left Column: Inquiry Queue */}
+              <div className="lg:col-span-5 space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
+                {filteredTickets.length === 0 ? (
+                  <div className="p-8 rounded-2xl neu-flat text-center text-slate-400 text-xs">
+                    <Headphones className="w-8 h-8 text-slate-500 mx-auto mb-2" />
+                    <p className="font-bold text-slate-300">No student inquiries found</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      When students ask questions or request exam papers, they appear here.
+                    </p>
+                  </div>
+                ) : (
+                  filteredTickets.map((t) => {
+                    const isSelected = activeSupportTicket?.id === t.id;
+                    const isResolved = t.status === 'RESOLVED';
+                    const isInProgress = t.status === 'IN_PROGRESS';
+                    return (
+                      <div
+                        key={t.id}
+                        onClick={() => {
+                          setActiveSupportTicket(t);
+                        }}
+                        className={`p-3.5 rounded-2xl cursor-pointer transition-all border ${
+                          isSelected
+                            ? 'bg-purple-900/20 border-purple-500/50 shadow-lg shadow-purple-500/10'
+                            : 'neu-flat hover:border-purple-500/30 border-slate-200 dark:border-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className="text-xs font-bold text-slate-100 truncate">
+                            {t.user_name}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 text-[9px] font-extrabold rounded-full ${
+                              isResolved
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                : isInProgress
+                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                : 'bg-purple-500/20 text-purple-300 border border-purple-500/30 animate-pulse'
+                            }`}
+                          >
+                            {t.status}
+                          </span>
+                        </div>
+
+                        <p className="text-xs font-semibold text-slate-300 truncate mb-1">
+                          {t.subject}
+                        </p>
+
+                        <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                          <span className="truncate max-w-[140px] text-purple-400 font-medium">
+                            {t.department_name || 'General'}
+                          </span>
+                          <span>•</span>
+                          <span>{t.category || 'General'}</span>
+                          <span>•</span>
+                          <span>{new Date(t.updated_at || t.created_at).toLocaleDateString()}</span>
+                        </div>
+
+                        <p className="text-[11px] text-slate-400 mt-2 line-clamp-1 bg-black/20 p-1.5 rounded-lg">
+                          💬 {t.last_message || 'Inquiry initiated.'}
+                        </p>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Right Column: Live Conversation with Student */}
+              <div className="lg:col-span-7 rounded-2xl neu-flat p-4 sm:p-5 flex flex-col h-[600px] border border-slate-200 dark:border-slate-800">
+                {activeSupportTicket ? (
+                  <>
+                    {/* Active Conversation Header */}
+                    <div className="pb-3 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-sm font-bold text-white truncate">
+                            {activeSupportTicket.user_name}
+                          </h3>
+                          <span className="text-[10px] text-slate-400">({activeSupportTicket.user_email})</span>
+                        </div>
+                        <p className="text-xs text-purple-300 font-semibold mt-0.5">
+                          {activeSupportTicket.subject}
+                        </p>
+                        <p className="text-[10px] text-slate-400">
+                          {activeSupportTicket.college_name} • {activeSupportTicket.department_name}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Status:</span>
+                        {['OPEN', 'IN_PROGRESS', 'RESOLVED'].map((statusOption) => (
+                          <button
+                            key={statusOption}
+                            onClick={() => handleUpdateTicketStatus(activeSupportTicket.id, statusOption)}
+                            className={`px-2 py-1 text-[10px] font-extrabold rounded-lg transition-all ${
+                              activeSupportTicket.status === statusOption
+                                ? 'bg-purple-600 text-white shadow-sm'
+                                : 'neu-button text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            {statusOption.replace('_', ' ')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Messages Thread */}
+                    <div className="flex-1 overflow-y-auto py-3 space-y-3 pr-1">
+                      {(activeSupportTicket.messages || []).map((msg) => {
+                        const isAdmin = msg.sender_role === 'ADMIN';
+                        return (
+                          <div
+                            key={msg.id}
+                            className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}
+                          >
+                            <div className="flex items-center space-x-1.5 text-[10px] text-slate-400 mb-0.5">
+                              <span className={isAdmin ? 'font-bold text-purple-400' : 'font-semibold text-slate-300'}>
+                                {isAdmin ? 'You (Shiva Chaitanya)' : activeSupportTicket.user_name}
+                              </span>
+                              <span>•</span>
+                              <span>
+                                {new Date(msg.created_at).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            </div>
+                            <div
+                              className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap ${
+                                isAdmin
+                                  ? 'bg-purple-600 text-white rounded-tr-sm shadow-md shadow-purple-500/20'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-sm border border-slate-200 dark:border-slate-700'
+                              }`}
+                            >
+                              {msg.content}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Admin Reply Bar */}
+                    <form onSubmit={handleSendAdminReply} className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={adminReplyText}
+                        onChange={(e) => setAdminReplyText(e.target.value)}
+                        placeholder={`Reply directly to ${activeSupportTicket.user_name}...`}
+                        className="flex-1 px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!adminReplyText.trim() || isSendingReply}
+                        className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center space-x-1.5 disabled:opacity-40 transition-all shadow-md shadow-purple-500/25 cursor-pointer"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>{isSendingReply ? 'Sending...' : 'Reply'}</span>
+                      </button>
+                    </form>
+                  </>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400">
+                    <Headphones className="w-12 h-12 text-slate-600 mb-3" />
+                    <h4 className="text-sm font-bold text-slate-200 mb-1">
+                      No Ticket Selected
+                    </h4>
+                    <p className="text-xs text-slate-500 max-w-sm">
+                      Select any student query from the list on the left to read their message and respond directly.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* TAB: Student Feedback & First-Time Reviews */}
+      {activeTab === 'feedback' && (() => {
+        const metrics = feedbacksData?.metrics || {};
+        const feedbacksList = feedbacksData?.feedbacks || [];
+        const avgRating = metrics.avgRating || 0;
+        const totalReviews = metrics.total || 0;
+        const popularTags = metrics.popularTags || [];
+
+        return (
+          <div className="space-y-4 animate-fade-in">
+            {/* Top Metrics Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-2xl neu-flat">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Overall Rating
+                </span>
+                <div className="flex items-center space-x-2 mt-1">
+                  <span className="text-2xl font-black text-white">{avgRating}</span>
+                  <span className="text-xs text-slate-400">/ 5.0</span>
+                  <div className="flex items-center text-amber-400 ml-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star
+                        key={i}
+                        className={`w-3.5 h-3.5 ${
+                          i <= Math.round(avgRating) ? 'fill-amber-400' : 'text-slate-600'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">From student first-visit reviews</p>
+              </div>
+
+              <div className="p-4 rounded-2xl neu-flat">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Total Submissions
+                </span>
+                <p className="text-2xl font-black text-white mt-1">{totalReviews}</p>
+                <p className="text-[10px] text-slate-500 mt-1">Responses before leaving the app</p>
+              </div>
+
+              <div className="p-4 rounded-2xl neu-flat sm:col-span-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                  Top Experience Highlights
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {popularTags.length > 0 ? (
+                    popularTags.map(({ tag, count }) => (
+                      <span
+                        key={tag}
+                        className="px-2.5 py-1 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-semibold flex items-center space-x-1"
+                      >
+                        <span>{tag}</span>
+                        <span className="px-1.5 py-0.2 rounded-full bg-purple-500/20 text-[10px] font-bold">
+                          {count}
+                        </span>
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-500">No tag data recorded yet.</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Feedbacks Grid */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-white">
+                  Recent First-Time Student Reviews ({feedbacksList.length})
+                </h3>
+                <button
+                  onClick={fetchData}
+                  className="px-3 py-1.5 rounded-xl neu-button text-xs text-slate-400 hover:text-white flex items-center space-x-1.5"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>Refresh</span>
+                </button>
+              </div>
+
+              {feedbacksList.length === 0 ? (
+                <div className="p-8 rounded-2xl neu-flat text-center text-slate-400 text-xs">
+                  <MessageSquareHeart className="w-8 h-8 text-slate-500 mx-auto mb-2" />
+                  <p className="font-bold text-slate-300">No feedback submissions yet</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    When first-time visitors leave feedback or exit ratings, they will be cataloged here.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {feedbacksList.map((f) => (
+                    <div
+                      key={f.id}
+                      className="p-4 rounded-2xl neu-flat border border-slate-200 dark:border-slate-800 space-y-2.5"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-100">{f.user_name}</h4>
+                          <p className="text-[10px] text-slate-400">
+                            {f.college_name || 'Enrolled Campus'} {f.department_name ? `• ${f.department_name}` : ''}
+                          </p>
+                        </div>
+                        <div className="flex items-center text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-lg border border-amber-400/20">
+                          <Star className="w-3 h-3 fill-amber-400 mr-1" />
+                          <span className="text-xs font-black">{f.rating}/5</span>
+                        </div>
+                      </div>
+
+                      {f.tags && f.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {f.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2 py-0.5 rounded-lg bg-slate-800 text-[10px] font-medium text-slate-300 border border-slate-700"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {f.comment && (
+                        <p className="text-xs text-slate-300 italic bg-black/20 p-2.5 rounded-xl border border-slate-700/40">
+                          &ldquo;{f.comment}&rdquo;
+                        </p>
+                      )}
+
+                      <span className="text-[10px] text-slate-500 block text-right">
+                        {new Date(f.created_at).toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* TAB 4: All Resources & Multi-Campus Unwanted File Cleaner */}
       {activeTab === 'all' && (() => {

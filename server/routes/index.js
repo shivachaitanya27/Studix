@@ -4,6 +4,8 @@ import academicRoutes from './academicRoutes.js';
 import resourceRoutes from './resourceRoutes.js';
 import aiRoutes from './aiRoutes.js';
 import adminRoutes from './adminRoutes.js';
+import supportRoutes from './supportRoutes.js';
+import feedbackRoutes from './feedbackRoutes.js';
 
 const router = Router();
 
@@ -29,6 +31,8 @@ router.use('/academic', academicRoutes);
 router.use('/resources', resourceRoutes);
 router.use('/ai', aiRoutes);
 router.use('/admin', adminRoutes);
+router.use('/support', supportRoutes);
+router.use('/feedback', feedbackRoutes);
 
 export default router;
 

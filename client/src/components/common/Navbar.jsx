@@ -25,6 +25,7 @@ import {
   Pencil,
   Menu,
   X,
+  Headphones,
   LayoutDashboard,
   Palette,
   Moon,
@@ -48,7 +49,7 @@ import ThemeSwitcher, { THEMES } from './ThemeSwitcher.jsx';
 import LanguageSwitcher from './LanguageSwitcher.jsx';
 import SettingsModal from './SettingsModal.jsx';
 
-export const Navbar = () => {
+export const Navbar = ({ onOpenSupport }) => {
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -270,6 +271,19 @@ export const Navbar = () => {
               />
             </div>
 
+            {/* Student Support & Help Button */}
+            <button
+              onClick={() => {
+                if (onOpenSupport) onOpenSupport();
+              }}
+              id="navbar-open-support-btn"
+              title="Help & Student Support (Chat with Admin)"
+              className="p-2.5 rounded-xl neu-button text-slate-400 hover:text-brand-400 hover:border-brand-500/30 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <Headphones className="w-4 h-4 text-brand-400" />
+              <span className="hidden xl:inline text-xs font-bold text-slate-300">Support</span>
+            </button>
+
             {/* Settings Modal Button */}
             <button
               onClick={() => {
@@ -445,6 +459,20 @@ export const Navbar = () => {
                   >
                     <Camera className="w-3.5 h-3.5 text-brand-400" />
                     <span>{isAvatarUploading ? 'Uploading...' : 'Change Profile Photo'}</span>
+                  </button>
+
+                  {/* Student Support & Admin Chat */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      if (onOpenSupport) onOpenSupport();
+                    }}
+                    id="profile-dropdown-support-btn"
+                    className="w-full py-2 px-3 rounded-xl neu-button text-xs font-semibold text-brand-600 dark:text-brand-300 hover:text-white flex items-center justify-center space-x-2 transition-all border border-brand-500/20 bg-brand-500/5 hover:bg-brand-500/15 cursor-pointer"
+                  >
+                    <Headphones className="w-3.5 h-3.5 text-brand-400" />
+                    <span>Student Support & Admin Chat</span>
                   </button>
 
                   {/* Account & Security Settings */}
@@ -711,6 +739,18 @@ export const Navbar = () => {
                       <span>Admin Panel</span>
                     </Link>
                   )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileDrawerOpen(false);
+                    if (onOpenSupport) onOpenSupport();
+                  }}
+                  className="w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2.5 neu-button text-brand-600 dark:text-brand-300 hover:text-white"
+                >
+                  <Headphones className="w-4 h-4 text-brand-500 dark:text-brand-400" />
+                  <span>Student Support & Chat</span>
+                </button>
               </div>
 
               {/* Multilingual & Theme Controls in Drawer */}

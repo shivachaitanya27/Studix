@@ -298,3 +298,54 @@ INSERT INTO subjects (department_id, year, semester, name, code) VALUES
 ('d1000000-0000-0000-0000-000000000001', 4, 8, 'Distributed Systems', 'CS801PC'),
 ('d1000000-0000-0000-0000-000000000001', 4, 8, 'Major Project & Industry Internship', 'CS802PR');
 
+-- ==============================================================================
+-- 7. STUDENT SUPPORT & FEEDBACK TABLES
+-- ==============================================================================
+
+-- 7.1 Student Support Tickets
+CREATE TABLE IF NOT EXISTS support_tickets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    user_name VARCHAR(255) NOT NULL,
+    user_email VARCHAR(255) NOT NULL,
+    college_name VARCHAR(255),
+    department_name VARCHAR(255),
+    subject VARCHAR(255) NOT NULL,
+    category VARCHAR(100) DEFAULT 'General',
+    status VARCHAR(50) DEFAULT 'OPEN', -- 'OPEN', 'IN_PROGRESS', 'RESOLVED'
+    last_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 7.2 Student Support Messages
+CREATE TABLE IF NOT EXISTS support_messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    ticket_id UUID REFERENCES support_tickets(id) ON DELETE CASCADE,
+    sender_id VARCHAR(255) NOT NULL,
+    sender_role VARCHAR(50) NOT NULL, -- 'STUDENT' or 'ADMIN'
+    sender_name VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 7.3 First-Time User Exit Feedback
+CREATE TABLE IF NOT EXISTS user_feedbacks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id VARCHAR(255),
+    user_name VARCHAR(255),
+    user_email VARCHAR(255),
+    college_name VARCHAR(255),
+    department_name VARCHAR(255),
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    tags TEXT[],
+    comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_tickets_user_id ON support_tickets(user_id);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets(status);
+CREATE INDEX IF NOT EXISTS idx_support_messages_ticket_id ON support_messages(ticket_id);
+CREATE INDEX IF NOT EXISTS idx_user_feedbacks_created_at ON user_feedbacks(created_at DESC);
+
+
