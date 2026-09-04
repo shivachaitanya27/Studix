@@ -107,20 +107,20 @@ export const Navbar = () => {
   const hasAcademicContext = Boolean(college && department && year && semester);
 
   return (
-    <header className="sticky top-0 z-40 w-full neu-flat backdrop-blur-md transition-colors">
-      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-40 w-full neu-flat backdrop-blur-md transition-colors border-b border-dark-border/40 shadow-sm">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-20 sm:h-22 flex items-center justify-between">
         {/* Left: Brand Logo & Title */}
-        <div className="flex items-center space-x-3 sm:space-x-5">
-          <Link to="/dashboard" className="flex items-center space-x-2 sm:space-x-3 group">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl neu-button flex items-center justify-center text-brand-400 group-hover:scale-105 transition-transform">
-              <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6" />
+        <div className="flex items-center space-x-3 sm:space-x-6">
+          <Link to="/dashboard" className="flex items-center space-x-2.5 sm:space-x-3.5 group">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl neu-button flex items-center justify-center text-brand-400 group-hover:scale-105 transition-transform shadow-md border border-brand-500/20">
+              <GraduationCap className="w-6 h-6 sm:w-7 sm:h-7" />
             </div>
             <div>
-              <span className="text-lg sm:text-xl font-black tracking-tight brand-title-text">
+              <span className="text-xl sm:text-2xl font-black tracking-tight brand-title-text">
                 STUDIX
               </span>
 
-              <span className="hidden sm:inline-block ml-2 px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider uppercase neu-pressed text-brand-300 rounded">
+              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-extrabold tracking-wider uppercase neu-pressed text-brand-300 rounded-lg">
                 NEU
               </span>
             </div>
@@ -455,23 +455,27 @@ export const Navbar = () => {
           type="button"
           onClick={() => setIsMobileDrawerOpen(true)}
           id="mobile-top-nav-drawer-btn"
-          className="flex md:hidden items-center space-x-2 px-2.5 py-1.5 rounded-xl neu-button border border-brand-500/30 text-slate-200 hover:text-brand-300 transition-all cursor-pointer"
+          className="flex md:hidden items-center space-x-2.5 px-3 py-2 rounded-2xl neu-button border border-brand-500/40 text-slate-200 hover:text-brand-300 shadow-md transition-all cursor-pointer group"
           title="Open Navigation Menu"
         >
-          <div className="relative w-6 h-6 rounded-lg overflow-hidden flex items-center justify-center neu-pressed">
-            <div className="absolute inset-0 bg-gradient-to-tr from-brand-600 to-accent-violet flex items-center justify-center text-white font-black text-[10px]">
+          <div className="relative w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center neu-pressed border border-brand-500/30">
+            <div className="absolute inset-0 bg-gradient-to-tr from-brand-600 to-accent-violet flex items-center justify-center text-white font-black text-xs">
               {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
             </div>
             {(avatarPreview || user?.avatar_url) && (
               <img
                 src={avatarPreview || user?.avatar_url}
                 alt={user.full_name || 'Profile'}
-                className="relative z-10 w-full h-full object-cover rounded-lg"
+                className="relative z-10 w-full h-full object-cover rounded-xl"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             )}
           </div>
-          <Menu className="w-4 h-4 text-brand-400" />
+          <div className="flex flex-col text-left mr-0.5">
+            <span className="text-[11px] font-black text-slate-200 leading-none">Menu</span>
+            <span className="text-[8px] font-extrabold text-brand-400 uppercase tracking-wider">Studix</span>
+          </div>
+          <Menu className="w-4 h-4 text-brand-400 group-hover:scale-110 transition-transform" />
         </button>
 
         {/* Right-Side Mobile Navigation Slide-Over Drawer */}

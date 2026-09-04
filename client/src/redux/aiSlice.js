@@ -93,10 +93,11 @@ export const fetchSessionMessages = createAsyncThunk(
 
 export const sendAiMessage = createAsyncThunk(
   'ai/sendAiMessage',
-  async ({ sessionId, message, collegeId, departmentId, subjectId }, { rejectWithValue }) => {
+  async ({ sessionId, message, imageUrl, collegeId, departmentId, subjectId }, { rejectWithValue }) => {
     try {
       const response = await api.post(`/ai/sessions/${sessionId}/messages`, {
         message,
+        imageUrl,
         collegeId,
         departmentId,
         subjectId,

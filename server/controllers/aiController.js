@@ -121,11 +121,12 @@ export const aiController = {
   // POST /api/v1/ai/sessions/:id/messages
   async sendMessage(req, res) {
     try {
-      const { message, collegeId, departmentId, subjectId } = req.body;
+      const { message, imageUrl, collegeId, departmentId, subjectId } = req.body;
       const result = await aiChatService.sendMessage({
         chatId: req.params.id,
         userId: req.user.id,
         message,
+        imageUrl,
         collegeId: collegeId || req.user.college_id,
         departmentId: departmentId || req.user.department_id,
         subjectId,

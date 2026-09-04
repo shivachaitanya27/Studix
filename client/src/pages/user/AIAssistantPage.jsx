@@ -118,13 +118,60 @@ export const AIAssistantPage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type.includes('text') || file.name.endsWith('.txt')) {
+    // 1. Check if uploaded file is an Image (Exam paper photo, diagram, handwritten question)
+    if (file.type.startsWith('image/') || /\.(jpe?g|png|webp|bmp|gif)$/i.test(file.name)) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const rawDataUrl = event.target.result;
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1400;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressedUrl = canvas.toDataURL('image/jpeg', 0.85);
+            setAttachedFile({
+              name: file.name,
+              size: file.size,
+              type: 'image/jpeg',
+              isImage: true,
+              dataUrl: compressedUrl,
+              previewUrl: compressedUrl,
+            });
+          } else {
+            setAttachedFile({
+              name: file.name,
+              size: file.size,
+              type: file.type || 'image/jpeg',
+              isImage: true,
+              dataUrl: rawDataUrl,
+              previewUrl: rawDataUrl,
+            });
+          }
+        };
+        img.src = rawDataUrl;
+      };
+      reader.readAsDataURL(file);
+    } else if (file.type.includes('text') || file.name.endsWith('.txt')) {
       const reader = new FileReader();
       reader.onload = (event) => {
         setAttachedFile({
           name: file.name,
           size: file.size,
           type: file.type,
+          isImage: false,
           content: event.target.result,
         });
       };
@@ -135,6 +182,7 @@ export const AIAssistantPage = () => {
         name: file.name,
         size: file.size,
         type: file.type || 'application/pdf',
+        isImage: false,
         content: `[Attached Document: ${file.name}, ${(file.size / 1024).toFixed(1)} KB]`,
       });
     }
@@ -152,22 +200,39 @@ export const AIAssistantPage = () => {
     if (isSending) return;
 
     let fullMessage = promptText;
+    let imagePayload = null;
+
     if (attachedFile) {
-      const fileHeader = `📎 [Attached File: ${attachedFile.name} (${(attachedFile.size / 1024).toFixed(1)} KB)]`;
-      if (!fullMessage) {
-        fullMessage = `${fileHeader}\nPlease examine this attached syllabus/exam document and provide a complete summary of its questions, formulas, and concepts.`;
+      if (attachedFile.isImage) {
+        imagePayload = attachedFile.dataUrl;
+        if (!fullMessage) {
+          fullMessage = `📎 [Exam Question Image: ${attachedFile.name}]\nPlease analyze this uploaded question/diagram image and provide the step-by-step exam solution.`;
+        }
       } else {
-        fullMessage = `${fileHeader}\n${fullMessage}`;
-      }
-      if (attachedFile.content && !attachedFile.content.startsWith('[Attached')) {
-        fullMessage += `\n\n--- Document Text Content ---\n${attachedFile.content.slice(0, 3000)}`;
+        const fileHeader = `📎 [Attached Document: ${attachedFile.name} (${(attachedFile.size / 1024).toFixed(1)} KB)]`;
+        if (!fullMessage) {
+          fullMessage = `${fileHeader}\nPlease examine this attached document and provide a complete summary of its questions, formulas, and concepts.`;
+        } else {
+          fullMessage = `${fileHeader}\n${fullMessage}`;
+        }
+        if (attachedFile.content && !attachedFile.content.startsWith('[Attached')) {
+          fullMessage += `\n\n--- Document Text Content ---\n${attachedFile.content.slice(0, 3000)}`;
+        }
       }
     }
+
+    const payload = {
+      message: fullMessage,
+      imageUrl: imagePayload,
+      collegeId: college?.id,
+      departmentId: department?.id,
+      subjectId: subjects[0]?.id,
+    };
 
     if (!activeSessionId) {
       dispatch(
         createAiSession({
-          title: (promptText || attachedFile?.name || 'New Query').slice(0, 30) + '...',
+          title: (promptText || attachedFile?.name || 'Exam Paper Query').slice(0, 30) + '...',
           subjectId: subjects[0]?.id || null,
         })
       ).then((res) => {
@@ -175,10 +240,7 @@ export const AIAssistantPage = () => {
           dispatch(
             sendAiMessage({
               sessionId: res.payload.id,
-              message: fullMessage,
-              collegeId: college?.id,
-              departmentId: department?.id,
-              subjectId: subjects[0]?.id,
+              ...payload,
             })
           );
         }
@@ -187,10 +249,7 @@ export const AIAssistantPage = () => {
       dispatch(
         sendAiMessage({
           sessionId: activeSessionId,
-          message: fullMessage,
-          collegeId: college?.id,
-          departmentId: department?.id,
-          subjectId: subjects[0]?.id,
+          ...payload,
         })
       );
     }
@@ -510,20 +569,30 @@ export const AIAssistantPage = () => {
             ))}
           </div>
 
-          {/* Attached Document Preview Badge */}
+          {/* Attached Document / Exam Image Preview Badge */}
           {attachedFile && (
-            <div className="mt-2.5 p-2 px-3 rounded-xl bg-brand-500/15 border border-brand-500/40 flex items-center justify-between text-xs animate-fade-in">
-              <div className="flex items-center space-x-2 text-brand-300 min-w-0">
-                <Paperclip className="w-4 h-4 text-brand-400 flex-shrink-0" />
-                <span className="font-bold truncate max-w-[200px] sm:max-w-xs">{attachedFile.name}</span>
-                <span className="text-[10px] text-slate-400 flex-shrink-0">
-                  ({(attachedFile.size / 1024).toFixed(1)} KB)
-                </span>
+            <div className="mt-2.5 p-2 px-3 rounded-2xl bg-brand-500/15 border border-brand-500/40 flex items-center justify-between text-xs animate-fade-in">
+              <div className="flex items-center space-x-2.5 text-brand-300 min-w-0">
+                {attachedFile.isImage ? (
+                  <img
+                    src={attachedFile.previewUrl}
+                    alt="Uploaded Question Preview"
+                    className="w-10 h-10 rounded-xl object-cover border border-brand-500/40 flex-shrink-0 shadow-md"
+                  />
+                ) : (
+                  <Paperclip className="w-4 h-4 text-brand-400 flex-shrink-0" />
+                )}
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold truncate max-w-[200px] sm:max-w-xs">{attachedFile.name}</span>
+                  <span className="text-[10px] text-slate-400">
+                    {attachedFile.isImage ? '📸 Exam Image Ready for AI Vision Analysis' : `${(attachedFile.size / 1024).toFixed(1)} KB Document`}
+                  </span>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={handleRemoveAttachedFile}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
                 title="Remove attached file"
               >
                 <X className="w-3.5 h-3.5" />
@@ -533,12 +602,12 @@ export const AIAssistantPage = () => {
 
           {/* Bottom Prompt Input */}
           <form onSubmit={handleSendMessage} className="mt-2 flex items-center space-x-1.5 sm:space-x-2">
-            {/* Hidden File Input for RAG Attachment */}
+            {/* Hidden File Input for RAG & Vision Image Attachment */}
             <input
               type="file"
               ref={fileInputRef}
               onChange={handleFileSelect}
-              accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.txt"
+              accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.txt,image/*"
               className="hidden"
             />
 
@@ -547,8 +616,8 @@ export const AIAssistantPage = () => {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               id="rag-chat-file-upload-btn"
-              title="Upload file or PDF to solve directly with AI"
-              className={`p-3 rounded-2xl neu-button transition-all flex items-center justify-center ${
+              title="Upload question photo, diagram, or PDF to solve directly with AI"
+              className={`p-3 rounded-2xl neu-button transition-all flex items-center justify-center cursor-pointer ${
                 attachedFile
                   ? 'text-brand-400 border-brand-500/40 bg-brand-500/10'
                   : 'text-slate-400 hover:text-white'
@@ -565,8 +634,8 @@ export const AIAssistantPage = () => {
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder={
                   attachedFile
-                    ? `Ask questions about ${attachedFile.name}...`
-                    : "Ask anything about your syllabus or exam questions (e.g. Part-A 2 marks)..."
+                    ? (attachedFile.isImage ? "Ask about this question image, or tap Send to analyze..." : `Ask questions about ${attachedFile.name}...`)
+                    : "Ask question, paste syllabus problem, or attach exam photo..."
                 }
                 className="w-full px-3.5 sm:px-4 py-3 rounded-2xl neu-pressed text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />

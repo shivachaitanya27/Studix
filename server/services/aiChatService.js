@@ -32,10 +32,10 @@ export const aiChatService = {
     return dataStore.deleteAiChat(chatId, userId);
   },
 
-  // Send message and get multi-turn AI response with repository grounding
-  async sendMessage({ chatId, userId, message, collegeId, departmentId, subjectId }) {
-    if (!message || !message.trim()) {
-      const err = new Error('Message cannot be empty.');
+  // Send message and get multi-turn AI response with repository grounding & multimodal image analysis
+  async sendMessage({ chatId, userId, message, imageUrl, collegeId, departmentId, subjectId }) {
+    if ((!message || !message.trim()) && !imageUrl) {
+      const err = new Error('Please enter a message or attach an exam image to analyze.');
       err.status = 400;
       throw err;
     }
@@ -48,16 +48,21 @@ export const aiChatService = {
       throw err;
     }
 
-    // 2. Persist user message
+    const effectiveText = (message && message.trim())
+      ? message.trim()
+      : (imageUrl ? 'Analyze this uploaded question paper / diagram and solve it step-by-step.' : 'Query');
+
+    // 2. Persist user message in history
     const userMessage = await dataStore.createAiMessage({
       chatId,
       userId,
       sender: 'user',
-      message: message.trim(),
+      message: effectiveText,
     });
 
-    // 3. Fetch recent conversation history
-    const history = await dataStore.getAiMessages(chatId, userId);
+    // 3. Fetch recent conversation history (excluding the current turn which we construct below)
+    const allHistory = await dataStore.getAiMessages(chatId, userId);
+    const historyBeforeCurrent = allHistory.filter((h) => h.id !== userMessage.id).slice(-5);
 
     // 4. Grounding: Fetch repository resources
     const effectiveSubjectId = subjectId || chat.subject_id;
@@ -65,7 +70,7 @@ export const aiChatService = {
       collegeId,
       departmentId,
       subjectId: effectiveSubjectId,
-      search: message,
+      search: effectiveText,
     });
 
     let contextSnippet = '';
@@ -81,26 +86,26 @@ export const aiChatService = {
         .join('\n\n');
     }
 
-    // 5. Construct conversation payload for Gemini
+    // 5. Construct conversation payload for Gemini (supports text & multimodal image analysis)
     const geminiMessages = [
       {
         role: 'system',
         content:
-          'You are Studix Multi-Turn Exam AI Assistant, powered by Gemini 2.0 Flash. 🎓✨\n' +
+          'You are Studix Multi-Turn Exam AI Assistant, powered by Gemini 2.0 / 2.5 Flash with multimodal vision capabilities. 🎓✨\n' +
           'Deliver deeply structured, attractive, high-scoring responses tailored for university engineering scholars.\n\n' +
+          'MULTIMODAL IMAGE VISION & ANALYSIS INSTRUCTIONS:\n' +
+          '- When an image is provided, examine it with supreme detail:\n' +
+          '  1. 🔍 **Transcribe / State**: Extract the exact text, question numbers, equations, or circuit/system diagrams shown in the image.\n' +
+          '  2. 📐 **Diagram Recognition**: If it is an architecture, ER diagram, state machine, or network topology, identify all nodes, components, and data flows.\n' +
+          '  3. ⚡ **Step-by-Step Solution**: Provide the definitive university exam solution with formulas, substitutions, derivations, and final calculated answers.\n' +
+          '  4. 🏆 **High-Yield Exam Tips**: Mention common student mistakes and how examiners award step marks.\n\n' +
           'UNIVERSITY EXAM MARK-ALLOCATION RULES:\n' +
-          '- 📝 **Part-A (2 Marks Format)**: Provide concise, high-yield answers: 1 exact textbook definition, core formula/equation (if applicable), followed by 2 crisp bullet points. Maximum 4-6 lines so students score 2/2 in minimum time.\n' +
-          '- 🎯 **Part-B (10 / 16 Marks Format)**: Deliver an elaborate, full-score answer with:\n' +
-          '  1. 📌 **Executive Overview & Definition**\n' +
-          '  2. ⚙️ **Detailed Mechanism / Architecture with ASCII or Tabular Diagram**\n' +
-          '  3. 📊 **Key Characteristics or Comparison Table**\n' +
-          '  4. 💡 **Numerical/Real-World Example or Step-by-Step Derivation**\n' +
-          '  5. 🏆 **High-Scoring Examiner Tips**\n\n' +
+          '- 📝 **Part-A (2 Marks Format)**: Concise, high-yield answers: 1 exact definition, core formula/equation, 2 crisp bullet points.\n' +
+          '- 🎯 **Part-B (10 / 16 Marks Format)**: Deliver an elaborate, full-score answer with Overview, Mechanism/ASCII Diagram, Comparison Table, and Real-World Engineering Example.\n\n' +
           'FORMATTING RULES:\n' +
-          '- Use `***` (three asterisks on their own line) to separate major sections. The frontend will render this as an attractive highlighted banner with sparkles!\n' +
+          '- Use `***` on its own line to separate major sections.\n' +
           '- 🔑 **Bold Key Technical Terms** and write formulas in clear code/latex style.\n' +
-          '- ✨ **Tasteful Emojis**: Use intuitive emojis (🎓, 💡, ⚡, 📌, 🚀, 🔍, 📝, 🎯, ⚙️, 🧠, 📊) generously to make concepts stand out.\n' +
-          '- 📚 Ground answers in campus repository context whenever available.',
+          '- ✨ **Tasteful Emojis**: Use intuitive emojis (🎓, 💡, ⚡, 📌, 🚀, 🔍, 📝, 🎯, ⚙️, 🧠, 📊) to make concepts stand out.',
       },
     ];
 
@@ -111,12 +116,35 @@ export const aiChatService = {
       });
     }
 
-    // Append last 6 turns of history
-    const recentHistory = history.slice(-6);
-    for (const h of recentHistory) {
+    // Append prior history turns
+    for (const h of historyBeforeCurrent) {
       geminiMessages.push({
         role: h.sender === 'user' ? 'user' : 'assistant',
         content: h.message,
+      });
+    }
+
+    // Append the active user turn: Multimodal with image_url if image is attached!
+    if (imageUrl) {
+      geminiMessages.push({
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: `[IMAGE INSPECTION & SOLVER REQUEST]\n${effectiveText}\n\nPlease inspect the image carefully, extract the questions/diagrams/equations, and provide the complete high-scoring step-by-step exam solution:`,
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: imageUrl,
+            },
+          },
+        ],
+      });
+    } else {
+      geminiMessages.push({
+        role: 'user',
+        content: effectiveText,
       });
     }
 
@@ -126,7 +154,7 @@ export const aiChatService = {
     } catch (err) {
       console.warn('AI chat generation fallback:', err.message);
       aiReplyText =
-        `### Studix Academic Assistant\n\nI have reviewed your query regarding "${message}".\n\n` +
+        `### Studix Academic Assistant\n\nI have reviewed your query regarding "${effectiveText}".\n\n` +
         `**Key Concepts**:\n` +
         `1. Review university past papers for this topic under **Repository -> Previous Papers**.\n` +
         `2. For high-mark questions (10/16 marks), be sure to include definitions, standard block diagrams, and comparative analysis.`;
