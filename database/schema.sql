@@ -17,6 +17,7 @@ DO $$ BEGIN
         'PREVIOUS_PAPER', 
         'MID_1', 
         'MID_2', 
+        'MODEL_PAPER', 
         'SEMESTER_PAPER', 
         'INTERNAL_PAPER', 
         'SUBJECT_NOTES', 

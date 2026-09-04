@@ -44,16 +44,27 @@ export const UploadModal = ({ isOpen, onClose }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const isValidDocFormat = (fileName) => {
-    const ext = fileName.slice(fileName.lastIndexOf('.')).toLowerCase();
-    return ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.png', '.jpg', '.jpeg', '.webp'].includes(ext);
+  const isValidDocFormat = (fileOrName) => {
+    if (!fileOrName) return false;
+    const name = typeof fileOrName === 'string' ? fileOrName : (fileOrName.name || '');
+    const mime = typeof fileOrName === 'object' && fileOrName.type ? fileOrName.type.toLowerCase() : '';
+    const ext = name.includes('.') ? name.slice(name.lastIndexOf('.')).toLowerCase() : '';
+
+    return (
+      ext === '.pdf' ||
+      mime.includes('pdf') ||
+      ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.png', '.jpg', '.jpeg', '.webp', '.txt'].includes(ext) ||
+      mime.startsWith('image/') ||
+      mime.includes('word') ||
+      mime.includes('presentation')
+    );
   };
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
-      if (!isValidDocFormat(selected.name)) {
-        setErrorMessage('Unsupported file format. PDF, Word (DOCX), PowerPoint (PPTX), and Image Scans (PNG/JPG) are allowed.');
+      if (!isValidDocFormat(selected)) {
+        setErrorMessage('Unsupported file format. Any PDF, Word (DOCX), PowerPoint (PPTX), and Image Scans (PNG/JPG) are allowed.');
         setFile(null);
         return;
       }
@@ -69,8 +80,8 @@ export const UploadModal = ({ isOpen, onClose }) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const selected = e.dataTransfer.files[0];
-      if (!isValidDocFormat(selected.name)) {
-        setErrorMessage('Unsupported file format. PDF, Word (DOCX), PowerPoint (PPTX), and Image Scans (PNG/JPG) are allowed.');
+      if (!isValidDocFormat(selected)) {
+        setErrorMessage('Unsupported file format. Any PDF, Word (DOCX), PowerPoint (PPTX), and Image Scans (PNG/JPG) are allowed.');
         setFile(null);
         return;
       }
@@ -89,8 +100,8 @@ export const UploadModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    if (!isValidDocFormat(file.name)) {
-      setErrorMessage('Only PDF, Word (DOC/DOCX), and PowerPoint (PPT/PPTX) formats can be uploaded.');
+    if (!isValidDocFormat(file)) {
+      setErrorMessage('Unsupported file format. Any PDF, Word (DOC/DOCX), PowerPoint (PPT/PPTX), and Image Scans are allowed.');
       return;
     }
 
@@ -218,7 +229,7 @@ export const UploadModal = ({ isOpen, onClose }) => {
             <input
               type="file"
               onChange={handleFileChange}
-              accept=".pdf,.doc,.docx,.ppt,.pptx"
+              accept=".pdf,application/pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.webp"
               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
             />
             {file ? (
@@ -240,7 +251,7 @@ export const UploadModal = ({ isOpen, onClose }) => {
                   Drop your document here, or <span className="text-brand-400 underline">browse</span>
                 </p>
                 <p className="text-[10px] text-slate-400 font-medium">
-                  Supports PDF, Word (DOC/DOCX), and PowerPoint (PPT/PPTX) (Max 25MB)
+                  Supports all PDF documents, Word, PowerPoint, and Image Scans (Max 50MB)
                 </p>
               </div>
             )}
@@ -279,6 +290,7 @@ export const UploadModal = ({ isOpen, onClose }) => {
                   <option value="PREVIOUS_PAPER">Previous Exam Paper</option>
                   <option value="MID_1">Mid-1 Exam Paper</option>
                   <option value="MID_2">Mid-2 Exam Paper</option>
+                  <option value="MODEL_PAPER">Model Exam Paper</option>
                 </optgroup>
                 <optgroup label="Lecture Notes">
                   <option value="UNIT_NOTES">Unit-wise Notes</option>

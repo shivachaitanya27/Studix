@@ -69,6 +69,7 @@ export const RepositoryPage = () => {
 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedSemesterFilter, setSelectedSemesterFilter] = useState('');
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState('');
 
   // Cross-Department & Cross-College Filter State (Admin Only)
   const [selectedDeptFilter, setSelectedDeptFilter] = useState(isAdmin ? 'ALL' : (userDeptId || 'ALL'));
@@ -142,6 +143,13 @@ export const RepositoryPage = () => {
       ).length,
     },
     {
+      id: 'MODEL',
+      label: 'Model Papers',
+      count: resources.filter((r) =>
+        ['MODEL_PAPER'].includes(r.resource_type)
+      ).length,
+    },
+    {
       id: 'NOTES',
       label: 'Study Notes',
       count: resources.filter((r) =>
@@ -181,6 +189,10 @@ export const RepositoryPage = () => {
         }
       } else if (activeTab === 'MID') {
         if (!['MID_1', 'MID_2', 'INTERNAL_PAPER'].includes(item.resource_type)) {
+          return false;
+        }
+      } else if (activeTab === 'MODEL') {
+        if (item.resource_type !== 'MODEL_PAPER') {
           return false;
         }
       } else if (activeTab === 'NOTES') {
@@ -233,6 +245,11 @@ export const RepositoryPage = () => {
 
       // 4. Semester chip filter
       if (selectedSemesterFilter && item.semester !== parseInt(selectedSemesterFilter, 10)) {
+        return false;
+      }
+
+      // 5. Resource type filter
+      if (selectedTypeFilter && item.resource_type !== selectedTypeFilter) {
         return false;
       }
 
@@ -398,7 +415,7 @@ export const RepositoryPage = () => {
       </div>
 
       {/* Multi-Filter Search Bar */}
-      <div className="p-4 rounded-2xl neu-flat grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="p-4 rounded-2xl neu-flat grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Search Input */}
         <div className="relative">
           <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
@@ -456,6 +473,35 @@ export const RepositoryPage = () => {
             ))}
           </select>
         </div>
+
+        {/* Document Type Filter Dropdown */}
+        <div>
+          <select
+            value={selectedTypeFilter}
+            onChange={(e) => setSelectedTypeFilter(e.target.value)}
+            className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-200 focus:outline-none"
+          >
+            <option value="">All Document Types</option>
+            <optgroup label="Question Papers">
+              <option value="SEMESTER_PAPER">Semester Final Paper</option>
+              <option value="PREVIOUS_PAPER">Previous Exam Paper</option>
+              <option value="MID_1">Mid-1 Exam Paper</option>
+              <option value="MID_2">Mid-2 Exam Paper</option>
+              <option value="MODEL_PAPER">Model Exam Paper</option>
+            </optgroup>
+            <optgroup label="Lecture Notes">
+              <option value="UNIT_NOTES">Unit-wise Notes</option>
+              <option value="SUBJECT_NOTES">Full Subject Notes</option>
+              <option value="FACULTY_NOTES">Faculty Handouts</option>
+              <option value="STUDENT_NOTES">Student Notes</option>
+            </optgroup>
+            <optgroup label="Materials">
+              <option value="LAB_MANUAL">Lab Manual</option>
+              <option value="PPT">Presentation Slides (PPT)</option>
+              <option value="REFERENCE_MATERIAL">Reference Material</option>
+            </optgroup>
+          </select>
+        </div>
       </div>
 
       {/* Resources Cards Grid */}
@@ -486,12 +532,22 @@ export const RepositoryPage = () => {
                 Search All Semesters
               </button>
             )}
+            {selectedTypeFilter && (
+              <button
+                type="button"
+                onClick={() => setSelectedTypeFilter('')}
+                className="px-3 py-1.5 rounded-xl neu-button text-xs font-bold text-sky-300 hover:text-white cursor-pointer"
+              >
+                Clear Type Filter
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
                 dispatch(setSearchQuery(''));
                 dispatch(setSelectedSubjectFilter(''));
                 setSelectedSemesterFilter('');
+                setSelectedTypeFilter('');
               }}
               className="px-4 py-2 rounded-xl neu-button text-xs font-semibold text-brand-300 hover:text-white cursor-pointer"
             >

@@ -42,7 +42,7 @@ const ChatGPTCodeBlock = ({ language, code }) => {
       </div>
 
       {/* Code Body */}
-      <pre className="p-4 overflow-x-auto text-[11px] sm:text-[12px] leading-relaxed text-emerald-300 whitespace-pre">
+      <pre className="p-4 overflow-x-auto overflow-y-auto max-h-96 chatbot-code-scroll text-[11px] sm:text-[12px] leading-relaxed text-emerald-300 whitespace-pre">
         <code>{code}</code>
       </pre>
     </div>

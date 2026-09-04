@@ -62,6 +62,8 @@ import MarkdownMessage from '../../components/common/MarkdownMessage.jsx';
 export const AIAssistantPage = () => {
   const dispatch = useDispatch();
   const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const isNearBottomRef = useRef(true);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -103,9 +105,17 @@ export const AIAssistantPage = () => {
     }
   }, [activeSessionId, dispatch]);
 
-  // 3. Auto-scroll to bottom of chat
+  // Track scroll position so user wheel-scrolling up/down is not hijacked
+  const handleChatScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 140;
+  };
+
+  // 3. Auto-scroll to bottom of chat only if user is already at the bottom or just sent a message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isNearBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, isSending]);
 
   // 4. Auto-resize textarea like ChatGPT
@@ -278,6 +288,7 @@ export const AIAssistantPage = () => {
 
     setInputMessage('');
     setAttachedFile(null);
+    isNearBottomRef.current = true;
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (textareaRef.current) {
       textareaRef.current.style.height = '44px';
@@ -383,7 +394,7 @@ export const AIAssistantPage = () => {
                 </div>
 
                 {/* Sessions Scrollable List */}
-                <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-360px)] pr-1 scrollbar-thin">
+                <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-360px)] pr-1 chatbot-ai-msg-scroll scroll-smooth">
                   {sessions.map((sess) => {
                     const isActive = activeSessionId === sess.id;
                     return (
@@ -527,7 +538,7 @@ export const AIAssistantPage = () => {
               </form>
 
               {ragResults && (
-                <div className="mt-2.5 p-3 rounded-xl neu-pressed text-xs text-slate-700 dark:text-slate-300 max-w-2xl mx-auto space-y-1.5">
+                <div className="mt-2.5 p-3 rounded-xl neu-pressed text-xs text-slate-700 dark:text-slate-300 max-w-2xl mx-auto space-y-1.5 max-h-80 overflow-y-auto chatbot-ai-msg-scroll scroll-smooth">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-[11px] text-brand-500 uppercase">
                       Grounded Synthesis ({ragResults.totalSourcesFound} Sources)
@@ -541,7 +552,11 @@ export const AIAssistantPage = () => {
           )}
 
           {/* Conversation Stream (Center-Aligned like ChatGPT) */}
-          <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-6">
+          <div
+            ref={chatContainerRef}
+            onScroll={handleChatScroll}
+            className="flex-1 overflow-y-auto chatbot-stream-scroll scroll-smooth px-3 sm:px-6 py-4 space-y-6 overscroll-contain"
+          >
             <div className="max-w-3xl mx-auto w-full space-y-6">
 
               {/* ChatGPT Empty Welcome State */}
@@ -624,8 +639,8 @@ export const AIAssistantPage = () => {
                         <div
                           className={`p-4 sm:p-5 rounded-3xl text-xs leading-relaxed ${
                             isUser
-                              ? 'bg-slate-100 dark:bg-[#181e2e] border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white font-medium rounded-tr-sm'
-                              : 'bg-transparent text-slate-800 dark:text-slate-200'
+                              ? 'bg-slate-100 dark:bg-[#181e2e] border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white font-medium rounded-tr-sm max-h-[380px] overflow-y-auto chatbot-user-msg-scroll scroll-smooth'
+                              : 'bg-transparent text-slate-800 dark:text-slate-200 max-h-[620px] sm:max-h-[760px] overflow-y-auto chatbot-ai-msg-scroll scroll-smooth pr-1.5'
                           }`}
                         >
                           {isUser ? (

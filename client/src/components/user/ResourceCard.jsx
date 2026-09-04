@@ -66,6 +66,7 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
     PREVIOUS_PAPER: 'text-orange-400 bg-orange-500/10 border-orange-500/30',
     MID_1: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
     MID_2: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
+    MODEL_PAPER: 'text-sky-400 bg-sky-500/10 border-sky-500/30',
     UNIT_NOTES: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
     FACULTY_NOTES: 'text-teal-400 bg-teal-500/10 border-teal-500/30',
     STUDENT_NOTES: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30',

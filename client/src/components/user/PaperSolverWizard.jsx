@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import {
@@ -36,11 +36,12 @@ export const PaperSolverWizard = ({ isOpen, onClose }) => {
   const isAnalyzing = useSelector(selectIsAnalyzing);
   const isSolving = useSelector(selectIsSolving);
 
-  // Available papers from repository
+  // Available papers from repository (Includes Model Exam Papers positioned after Mid-1 and Mid-2)
   const availablePapers = resources.filter((r) =>
-    ['SEMESTER_PAPER', 'PREVIOUS_PAPER', 'MID_1', 'MID_2'].includes(r.resource_type)
+    ['SEMESTER_PAPER', 'PREVIOUS_PAPER', 'MID_1', 'MID_2', 'MODEL_PAPER'].includes(r.resource_type)
   );
 
+  const [paperTypeFilter, setPaperTypeFilter] = useState('ALL');
   const [selectedResourceId, setSelectedResourceId] = useState(
     availablePapers[0]?.id || ''
   );
@@ -50,6 +51,23 @@ export const PaperSolverWizard = ({ isOpen, onClose }) => {
   const [format, setFormat] = useState('university style');
   const [explanationStyle, setExplanationStyle] = useState('step-by-step');
   const [isCopied, setIsCopied] = useState(false);
+
+  // Filtered papers based on current chip filter
+  const displayPapers = availablePapers.filter((p) => {
+    if (paperTypeFilter === 'ALL') return true;
+    if (paperTypeFilter === 'SEMESTER') return ['SEMESTER_PAPER', 'PREVIOUS_PAPER'].includes(p.resource_type);
+    if (paperTypeFilter === 'MID_1') return p.resource_type === 'MID_1';
+    if (paperTypeFilter === 'MID_2') return p.resource_type === 'MID_2';
+    if (paperTypeFilter === 'MODEL') return p.resource_type === 'MODEL_PAPER';
+    return true;
+  });
+
+  // Keep selected paper synchronized when repository items or type filter change
+  useEffect(() => {
+    if (displayPapers.length > 0 && (!selectedResourceId || !displayPapers.some((p) => p.id === selectedResourceId))) {
+      setSelectedResourceId(displayPapers[0].id);
+    }
+  }, [availablePapers.length, paperTypeFilter, selectedResourceId, displayPapers]);
 
   // Trigger Turn 1: Analyze paper
   const handleAnalyze = () => {
@@ -138,16 +156,60 @@ export const PaperSolverWizard = ({ isOpen, onClose }) => {
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
                 Choose Exam Paper to Analyze
               </label>
+
+              {/* Paper Filter Chips (Model Paper right after Mid-1 & Mid-2) */}
+              <div className="flex items-center space-x-1.5 overflow-x-auto pb-2 mb-2 scrollbar-none">
+                {[
+                  { id: 'ALL', label: 'All Papers' },
+                  { id: 'SEMESTER', label: 'Semester' },
+                  { id: 'MID_1', label: 'Mid-1' },
+                  { id: 'MID_2', label: 'Mid-2' },
+                  { id: 'MODEL', label: 'Model Paper' },
+                ].map((typeTab) => (
+                  <button
+                    key={typeTab.id}
+                    type="button"
+                    onClick={() => {
+                      setPaperTypeFilter(typeTab.id);
+                      const matching = availablePapers.filter((p) => {
+                        if (typeTab.id === 'ALL') return true;
+                        if (typeTab.id === 'SEMESTER') return ['SEMESTER_PAPER', 'PREVIOUS_PAPER'].includes(p.resource_type);
+                        if (typeTab.id === 'MID_1') return p.resource_type === 'MID_1';
+                        if (typeTab.id === 'MID_2') return p.resource_type === 'MID_2';
+                        if (typeTab.id === 'MODEL') return p.resource_type === 'MODEL_PAPER';
+                        return true;
+                      });
+                      if (matching.length > 0 && !matching.some((m) => m.id === selectedResourceId)) {
+                        setSelectedResourceId(matching[0].id);
+                      }
+                    }}
+                    className={`px-3 py-1 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      paperTypeFilter === typeTab.id
+                        ? 'neu-pressed border border-brand-500 bg-brand-500/20 text-brand-300 shadow-sm'
+                        : 'neu-button text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {typeTab.label}
+                  </button>
+                ))}
+              </div>
+
               <select
                 value={selectedResourceId}
                 onChange={(e) => setSelectedResourceId(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl neu-pressed text-xs text-slate-100 focus:outline-none"
               >
-                {availablePapers.map((paper) => (
-                  <option key={paper.id} value={paper.id}>
-                    [{paper.resource_type}] {paper.title}
+                {displayPapers.length === 0 ? (
+                  <option value="" disabled>
+                    No {paperTypeFilter === 'MODEL' ? 'Model Exam Papers' : 'papers'} found in repository
                   </option>
-                ))}
+                ) : (
+                  displayPapers.map((paper) => (
+                    <option key={paper.id} value={paper.id}>
+                      [{paper.resource_type === 'MODEL_PAPER' ? 'MODEL PAPER' : paper.resource_type.replace('_', ' ')}] {paper.title}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 

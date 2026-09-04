@@ -75,7 +75,7 @@ export const deleteResource = createAsyncThunk(
 const initialState = {
   resources: [],
   bookmarks: [],
-  activeTab: 'ALL', // 'ALL' | 'PAPERS' | 'MID' | 'NOTES' | 'MATERIALS' | 'BOOKMARKS'
+  activeTab: 'ALL', // 'ALL' | 'PAPERS' | 'MID' | 'MODEL' | 'NOTES' | 'MATERIALS' | 'BOOKMARKS'
   searchQuery: '',
   selectedSubjectFilter: '',
   isLoading: false,

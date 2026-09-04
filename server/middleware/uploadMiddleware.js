@@ -6,6 +6,10 @@ const storage = multer.memoryStorage();
 
 const allowedMimeTypes = [
   'application/pdf',
+  'application/x-pdf',
+  'application/acrobat',
+  'applications/vnd.pdf',
+  'text/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.ms-powerpoint',
@@ -14,24 +18,49 @@ const allowedMimeTypes = [
 ];
 
 const fileFilter = (req, file, cb) => {
-  if (allowedMimeTypes.includes(file.mimetype)) {
+  const name = (file.originalname || '').toLowerCase();
+  const mime = (file.mimetype || '').toLowerCase();
+
+  // Allow ALL PDF formats regardless of browser mimetype
+  const isPdf = name.endsWith('.pdf') || mime.includes('pdf');
+
+  // Allow Office documents & text files
+  const isDoc =
+    name.endsWith('.doc') ||
+    name.endsWith('.docx') ||
+    name.endsWith('.ppt') ||
+    name.endsWith('.pptx') ||
+    name.endsWith('.txt') ||
+    allowedMimeTypes.includes(mime);
+
+  // Allow document image scans
+  const isImage =
+    mime.startsWith('image/') ||
+    name.endsWith('.png') ||
+    name.endsWith('.jpg') ||
+    name.endsWith('.jpeg') ||
+    name.endsWith('.webp');
+
+  if (isPdf || isDoc || isImage) {
+    if (isPdf && (!file.mimetype || file.mimetype === 'application/octet-stream')) {
+      file.mimetype = 'application/pdf';
+    }
     cb(null, true);
   } else {
     cb(
       new Error(
-        `Unsupported file type: ${file.mimetype}. Only PDF, Word (DOC/DOCX), and PowerPoint (PPT/PPTX) formats can be uploaded.`
+        `Unsupported file format: "${file.originalname}". Only PDF, Word (DOC/DOCX), PowerPoint (PPT/PPTX), and Image Scans (PNG/JPG) are allowed.`
       ),
       false
     );
   }
 };
 
-
 export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 25 * 1024 * 1024, // 25MB max
+    fileSize: 50 * 1024 * 1024, // 50MB max to easily accommodate high-res and multi-page PDFs
   },
 });
 
