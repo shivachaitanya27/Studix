@@ -7,7 +7,7 @@
    ============================================================================== */
 html,
 body {
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: contain;
   overscroll-behavior-x: none;
 }
 

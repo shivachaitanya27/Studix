@@ -245,7 +245,7 @@ export const Navbar = () => {
                     {(avatarPreview || user?.avatar_url) && (
                       <img
                         src={avatarPreview || user?.avatar_url}
-                        alt={user.full_name || 'Profile'}
+                        alt={user?.full_name || 'Profile'}
                         className="relative z-10 w-full h-full object-cover rounded-lg"
                         onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       />
@@ -320,7 +320,7 @@ export const Navbar = () => {
                           {(avatarPreview || user?.avatar_url) && (
                             <img
                               src={avatarPreview || user?.avatar_url}
-                              alt={user.full_name || 'Profile'}
+                              alt={user?.full_name || 'Profile'}
                               className="relative z-10 w-full h-full object-cover rounded-xl"
                               onError={(e) => { e.currentTarget.style.display = 'none'; }}
                             />
@@ -502,7 +502,7 @@ export const Navbar = () => {
             {(avatarPreview || user?.avatar_url) && (
               <img
                 src={avatarPreview || user?.avatar_url}
-                alt={user.full_name || 'Profile'}
+                alt={user?.full_name || 'Profile'}
                 className="relative z-10 w-full h-full object-cover rounded-xl"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />

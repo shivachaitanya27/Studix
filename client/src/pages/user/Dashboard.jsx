@@ -142,7 +142,7 @@ export const Dashboard = () => {
                   {(avatarPreview || user?.avatar_url) && (
                     <img
                       src={avatarPreview || user?.avatar_url}
-                      alt={user.full_name || 'Profile'}
+                      alt={user?.full_name || 'Profile'}
                       className="relative z-10 w-full h-full object-cover rounded-2xl"
                       onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     />

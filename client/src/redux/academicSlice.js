@@ -218,7 +218,7 @@ const academicSlice = createSlice({
       })
       .addCase(fetchColleges.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.colleges = action.payload;
+        state.colleges = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(fetchColleges.rejected, (state, action) => {
         state.isLoading = false;
@@ -233,7 +233,7 @@ const academicSlice = createSlice({
       })
       .addCase(fetchDepartments.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.departments = action.payload;
+        state.departments = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(fetchDepartments.rejected, (state, action) => {
         state.isLoading = false;
@@ -247,7 +247,7 @@ const academicSlice = createSlice({
       })
       .addCase(fetchSubjects.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.subjects = action.payload;
+        state.subjects = Array.isArray(action.payload) ? action.payload : [];
         persistContext(state);
       })
       .addCase(fetchSubjects.rejected, (state, action) => {
@@ -310,9 +310,9 @@ export const {
 } = academicSlice.actions;
 
 export const selectAcademic = (state) => state.academic;
-export const selectColleges = (state) => state.academic.colleges;
-export const selectDepartments = (state) => state.academic.departments;
-export const selectSubjects = (state) => state.academic.subjects;
+export const selectColleges = (state) => Array.isArray(state.academic?.colleges) ? state.academic.colleges : [];
+export const selectDepartments = (state) => Array.isArray(state.academic?.departments) ? state.academic.departments : [];
+export const selectSubjects = (state) => Array.isArray(state.academic?.subjects) ? state.academic.subjects : [];
 export const selectSelectedCollege = (state) => state.academic.selectedCollege;
 export const selectSelectedDepartment = (state) => state.academic.selectedDepartment;
 export const selectSelectedYear = (state) => state.academic.selectedYear;

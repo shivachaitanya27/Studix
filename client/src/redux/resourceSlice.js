@@ -134,7 +134,7 @@ const resourceSlice = createSlice({
       })
       .addCase(fetchResources.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.resources = action.payload;
+        state.resources = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(fetchResources.rejected, (state, action) => {
         state.isLoading = false;
@@ -151,6 +151,7 @@ const resourceSlice = createSlice({
       .addCase(uploadResource.fulfilled, (state, action) => {
         state.isUploading = false;
         state.uploadSuccess = true;
+        if (!Array.isArray(state.resources)) state.resources = [];
         state.resources.unshift(action.payload);
       })
       .addCase(uploadResource.rejected, (state, action) => {
@@ -161,6 +162,8 @@ const resourceSlice = createSlice({
     // Toggle bookmark
     builder.addCase(toggleBookmark.fulfilled, (state, action) => {
       const { resourceId, isBookmarked } = action.payload;
+      if (!Array.isArray(state.resources)) state.resources = [];
+      if (!Array.isArray(state.bookmarks)) state.bookmarks = [];
       const targetResource = state.resources.find((r) => r.id === resourceId);
 
       if (!isBookmarked) {
@@ -177,14 +180,15 @@ const resourceSlice = createSlice({
       }
     });
 
-
     // Fetch bookmarks
     builder.addCase(fetchUserBookmarks.fulfilled, (state, action) => {
-      state.bookmarks = action.payload;
+      state.bookmarks = Array.isArray(action.payload) ? action.payload : [];
     });
 
     // Delete resource
     builder.addCase(deleteResource.fulfilled, (state, action) => {
+      if (!Array.isArray(state.resources)) state.resources = [];
+      if (!Array.isArray(state.bookmarks)) state.bookmarks = [];
       state.resources = state.resources.filter((r) => r.id !== action.payload.resourceId);
       state.bookmarks = state.bookmarks.filter(
         (b) => (b.id || b.resource_id) !== action.payload.resourceId
@@ -201,15 +205,15 @@ export const {
   removeResource,
 } = resourceSlice.actions;
 
-export const selectResources = (state) => state.resources.resources;
-export const selectBookmarks = (state) => state.resources.bookmarks;
-export const selectActiveTab = (state) => state.resources.activeTab;
-export const selectResourceLoading = (state) => state.resources.isLoading;
-export const selectIsUploading = (state) => state.resources.isUploading;
-export const selectUploadError = (state) => state.resources.uploadError;
-export const selectUploadSuccess = (state) => state.resources.uploadSuccess;
-export const selectSearchQuery = (state) => state.resources.searchQuery;
+export const selectResources = (state) => Array.isArray(state.resources?.resources) ? state.resources.resources : [];
+export const selectBookmarks = (state) => Array.isArray(state.resources?.bookmarks) ? state.resources.bookmarks : [];
+export const selectActiveTab = (state) => state.resources?.activeTab || 'ALL';
+export const selectResourceLoading = (state) => Boolean(state.resources?.isLoading);
+export const selectIsUploading = (state) => Boolean(state.resources?.isUploading);
+export const selectUploadError = (state) => state.resources?.uploadError;
+export const selectUploadSuccess = (state) => Boolean(state.resources?.uploadSuccess);
+export const selectSearchQuery = (state) => state.resources?.searchQuery || '';
 export const selectSelectedSubjectFilter = (state) =>
-  state.resources.selectedSubjectFilter;
+  state.resources?.selectedSubjectFilter || '';
 
 export default resourceSlice.reducer;

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -409,15 +410,10 @@ export const UploadModal = ({ isOpen, onClose }) => {
           </button>
         </form>
 
-        {/* Duplicate Document Popup Notification */}
-        <AnimatePresence>
-          {duplicatePopup.isOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
-            >
+        {/* Duplicate Document Popup Notification via React Portal */}
+        {duplicatePopup.isOpen &&
+          createPortal(
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
               <motion.div
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -463,14 +459,14 @@ export const UploadModal = ({ isOpen, onClose }) => {
                 <button
                   type="button"
                   onClick={handleCloseDuplicatePopup}
-                  className="w-full py-3.5 px-4 rounded-xl neu-button text-amber-300 hover:text-white font-bold text-xs shadow-glow transition-all flex items-center justify-center space-x-2"
+                  className="w-full py-3.5 px-4 rounded-xl neu-button text-amber-300 hover:text-white font-bold text-xs shadow-glow transition-all flex items-center justify-center space-x-2 cursor-pointer"
                 >
                   <span>Understood, I&apos;ll Be First Next Time!</span>
                 </button>
               </motion.div>
-            </motion.div>
+            </div>,
+            document.body
           )}
-        </AnimatePresence>
       </motion.div>
     </div>
   );

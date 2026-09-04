@@ -114,10 +114,10 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
       if (user?.academic_year) setSelectedYear(user.academic_year);
       if (user?.semester) setSelectedSem(user.semester);
       if (user?.college_id || user?.college?.id) {
-        setSelectedCollegeId(user.college_id || user.college.id);
+        setSelectedCollegeId(user?.college_id || user?.college?.id || '');
       }
       if (user?.department_id || user?.department?.id) {
-        setSelectedDeptId(user.department_id || user.department.id);
+        setSelectedDeptId(user?.department_id || user?.department?.id || '');
       }
       setStreamSuccess('');
       setStreamError('');

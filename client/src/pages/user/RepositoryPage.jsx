@@ -125,34 +125,37 @@ export const RepositoryPage = () => {
   }, [dispatch, isAdmin, userCollegeId, userDeptId, selectedDeptFilter, selectedCollegeFilter]);
 
 
+  const resourcesList = Array.isArray(resources) ? resources : [];
+  const bookmarksList = Array.isArray(bookmarks) ? bookmarks : [];
+
   // Tab definitions
   const tabs = [
-    { id: 'ALL', label: 'All Resources', count: resources.length },
+    { id: 'ALL', label: 'All Resources', count: resourcesList.length },
     {
       id: 'PAPERS',
       label: 'Previous Papers',
-      count: resources.filter((r) =>
+      count: resourcesList.filter((r) =>
         ['SEMESTER_PAPER', 'PREVIOUS_PAPER'].includes(r.resource_type)
       ).length,
     },
     {
       id: 'MID',
       label: 'Mid-1 / Mid-2',
-      count: resources.filter((r) =>
+      count: resourcesList.filter((r) =>
         ['MID_1', 'MID_2', 'INTERNAL_PAPER'].includes(r.resource_type)
       ).length,
     },
     {
       id: 'MODEL',
       label: 'Model Papers',
-      count: resources.filter((r) =>
+      count: resourcesList.filter((r) =>
         ['MODEL_PAPER'].includes(r.resource_type)
       ).length,
     },
     {
       id: 'NOTES',
       label: 'Study Notes',
-      count: resources.filter((r) =>
+      count: resourcesList.filter((r) =>
         ['UNIT_NOTES', 'SUBJECT_NOTES', 'FACULTY_NOTES', 'STUDENT_NOTES'].includes(
           r.resource_type
         )
@@ -161,7 +164,7 @@ export const RepositoryPage = () => {
     {
       id: 'MATERIALS',
       label: 'Lab & PPTs',
-      count: resources.filter((r) =>
+      count: resourcesList.filter((r) =>
         ['LAB_MANUAL', 'PPT', 'ASSIGNMENT', 'REFERENCE_MATERIAL'].includes(
           r.resource_type
         )
@@ -170,12 +173,12 @@ export const RepositoryPage = () => {
     {
       id: 'BOOKMARKS',
       label: 'My Bookmarks',
-      count: bookmarks.length,
+      count: bookmarksList.length,
     },
   ];
 
   // Filtered dataset with full multi-field tokenized matching
-  const filteredList = (activeTab === 'BOOKMARKS' ? bookmarks : resources).filter(
+  const filteredList = (activeTab === 'BOOKMARKS' ? bookmarksList : resourcesList).filter(
     (item) => {
       // 0. Department boundary: regular students are strictly bound to their enrolled department
       if (!isAdmin && userDeptId && item.department_id && item.department_id !== userDeptId) {

@@ -61,7 +61,11 @@ export const fetchCurrentUser = createAsyncThunk(
       localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
       return user;
     } catch (err) {
-      return rejectWithValue(err.message || 'Session expired');
+      const status = err.status || err.response?.status || 500;
+      return rejectWithValue({
+        message: err.message || 'Session verification failed',
+        status,
+      });
     }
   }
 );
@@ -225,14 +229,19 @@ const authSlice = createSlice({
         state.user = action.payload;
         state.isAuthenticated = true;
       })
-      .addCase(fetchCurrentUser.rejected, (state) => {
-        state.user = null;
-        state.token = null;
-        state.isAuthenticated = false;
-        localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-        localStorage.removeItem(STORAGE_KEYS.USER_DATA);
-        sessionStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-        sessionStorage.removeItem(STORAGE_KEYS.USER_DATA);
+      .addCase(fetchCurrentUser.rejected, (state, action) => {
+        const status = action.payload?.status;
+        if (status === 401) {
+          state.user = null;
+          state.token = null;
+          state.isAuthenticated = false;
+          localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+          localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+          sessionStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+          sessionStorage.removeItem(STORAGE_KEYS.USER_DATA);
+        } else {
+          console.warn('Network timeout / server latency during session revalidation; maintaining existing user session.');
+        }
       });
 
     // Google OAuth Sync

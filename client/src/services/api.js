@@ -34,7 +34,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor: standardize error messages
+// Response interceptor: standardize error messages and preserve response payload
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -47,6 +47,8 @@ api.interceptors.response.use(
       message = error.message;
     }
     const customErr = new Error(message);
+    customErr.response = error.response;
+    customErr.status = error.response?.status;
     if (error.response?.data?.code) {
       customErr.code = error.response.data.code;
     }
