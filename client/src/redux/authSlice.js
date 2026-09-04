@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../services/api.js';
+import api, { resolveBaseUrl } from '../services/api.js';
 import { STORAGE_KEYS } from '../types/index.js';
 
 // Retrieve initial token & user from storage
@@ -89,8 +89,8 @@ export const uploadUserAvatar = createAsyncThunk(
         localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) ||
         sessionStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
 
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
-      const uploadUrl = `${baseUrl.replace(/\/+$/, '')}/auth/avatar`;
+      const baseUrl = resolveBaseUrl();
+      const uploadUrl = `${baseUrl}/auth/avatar`;
 
       let updatedUser = null;
 

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { STORAGE_KEYS } from '../types/index.js';
 
-const resolveBaseUrl = () => {
+export const resolveBaseUrl = () => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
   if (!envUrl) return '/api/v1';
   const cleaned = envUrl.replace(/\/+$/, '');
