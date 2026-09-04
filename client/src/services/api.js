@@ -1,9 +1,18 @@
 import axios from 'axios';
 import { STORAGE_KEYS } from '../types/index.js';
 
+const resolveBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (!envUrl) return '/api/v1';
+  const cleaned = envUrl.replace(/\/+$/, '');
+  if (cleaned.endsWith('/api/v1')) return cleaned;
+  if (cleaned.endsWith('/api')) return `${cleaned}/v1`;
+  return `${cleaned}/api/v1`;
+};
+
 // Base API instance
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
+  baseURL: resolveBaseUrl(),
   timeout: 30000,
 });
 

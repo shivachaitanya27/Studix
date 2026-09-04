@@ -64,19 +64,23 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// API Version 1 routes
-app.use('/api/v1', routes);
-
-
-
-// Root route
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Welcome to Studix API Engine',
-    version: '1.0.0',
-    documentation: '/api/v1/health'
-  });
+// Root route health info
+app.get('/', (req, res, next) => {
+  if (req.accepts('json') && !req.is('json')) {
+    return res.json({
+      message: 'Welcome to Studix API Engine',
+      version: '1.0.0',
+      status: 'healthy',
+      documentation: '/api/v1/health'
+    });
+  }
+  next();
 });
+
+// Mount API routes across /api/v1 (standard), /api (short), and root / (direct)
+app.use('/api/v1', routes);
+app.use('/api', routes);
+app.use('/', routes);
 
 // 404 handler
 app.use((req, res) => {
