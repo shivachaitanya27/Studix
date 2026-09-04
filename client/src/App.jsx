@@ -91,7 +91,16 @@ export const App = () => {
   return (
     <Routes>
       {/* Entrance Flow */}
-      <Route path="/" element={<SplashScreen onFinish={() => setShowInitialSplash(false)} />} />
+      <Route
+        path="/"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <Navigate to="/welcome" replace />
+          )
+        }
+      />
       <Route path="/welcome" element={<WelcomeScreen />} />
 
 
