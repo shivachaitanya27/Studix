@@ -1,5 +1,7 @@
 {
   "version": 2,
+  "buildCommand": "node scripts/build.js",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/api/(.*)",
