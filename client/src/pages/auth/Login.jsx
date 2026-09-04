@@ -94,19 +94,23 @@ export const Login = () => {
       const user = result.payload.user;
       dispatch(syncFromUser(user));
 
+      const isAuthorizedAdmin =
+        (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') &&
+        (user.email || '').toLowerCase().trim() === 'vshivachaitanya7@gmail.com';
+
       if (loginRole === 'ADMIN') {
-        if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+        if (isAuthorizedAdmin) {
           navigate('/admin');
           return;
         } else {
           setValidationError(
-            'Access Restricted: This account does not possess administrator privileges. Please switch to the Student Portal.'
+            'Access Restricted: Only the authorized administrator (vshivachaitanya7@gmail.com) can access the Admin Portal.'
           );
           return;
         }
       }
 
-      if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+      if (isAuthorizedAdmin) {
         navigate('/admin');
       } else if (!user.isOnboardingComplete) {
         navigate('/onboarding');

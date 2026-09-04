@@ -36,7 +36,7 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Admin Role Guard
+// Admin Role Guard (Strictly restricted to authorized administrator)
 const AdminRoute = ({ children }) => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const user = useSelector(selectCurrentUser);
@@ -46,7 +46,10 @@ const AdminRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (user && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+  const email = (user?.email || '').toLowerCase().trim();
+  const isAdminRole = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+
+  if (user && (!isAdminRole || email !== 'vshivachaitanya7@gmail.com')) {
     return <Navigate to="/dashboard" replace />;
   }
 

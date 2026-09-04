@@ -50,8 +50,11 @@ export const AuthCallback = () => {
       try {
         const resultAction = await dispatch(syncOAuthSession({ supabaseSession: session }));
         if (syncOAuthSession.fulfilled.match(resultAction)) {
-          const user = resultAction.payload.user;
-          if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+          const isAuthorizedAdmin =
+            (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') &&
+            (user.email || '').toLowerCase().trim() === 'vshivachaitanya7@gmail.com';
+
+          if (isAuthorizedAdmin) {
             navigate('/admin', { replace: true });
           } else if (!user.college_id || !user.department_id) {
             navigate('/onboarding', { replace: true });

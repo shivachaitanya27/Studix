@@ -45,10 +45,15 @@ export const AdminDashboard = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
 
-  // 1. Role Guard Check
+  // 1. Role & Identity Guard Check (Restricted strictly to authorized administrator)
   useEffect(() => {
-    if (user && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
-      navigate('/dashboard');
+    const isAuthorizedAdmin =
+      user &&
+      (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') &&
+      (user.email || '').toLowerCase().trim() === 'vshivachaitanya7@gmail.com';
+
+    if (user && !isAuthorizedAdmin) {
+      navigate('/dashboard', { replace: true });
     }
   }, [user, navigate]);
 

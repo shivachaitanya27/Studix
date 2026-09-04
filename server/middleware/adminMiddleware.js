@@ -11,10 +11,13 @@ export const adminMiddleware = (req, res, next) => {
   }
 
   const role = req.user.role?.toUpperCase();
-  if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
+  const email = (req.user.email || '').toLowerCase().trim();
+  const AUTHORIZED_ADMIN_EMAIL = 'vshivachaitanya7@gmail.com';
+
+  if ((role !== 'ADMIN' && role !== 'SUPER_ADMIN') || email !== AUTHORIZED_ADMIN_EMAIL) {
     return res.status(403).json({
       success: false,
-      message: 'Access denied: Administrator privileges required.',
+      message: 'Access denied: Only authorized administrator (vshivachaitanya7@gmail.com) can access the admin panel.',
     });
   }
 

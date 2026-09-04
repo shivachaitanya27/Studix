@@ -154,21 +154,22 @@ export const Navbar = () => {
               <span>{t('nav.aiSolver')}</span>
             </Link>
 
-            {/* Admin Operating System Link (for ADMIN and SUPER_ADMIN) */}
-            {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
-              <Link
-                to="/admin"
-                id="nav-admin-link"
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center space-x-1.5 ${
-                  location.pathname === '/admin'
-                    ? 'neu-tab-active text-purple-300'
-                    : 'neu-button text-purple-400 hover:text-white border-purple-500/40'
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
-                <span>{t('nav.admin')}</span>
-              </Link>
-            )}
+            {/* Admin Operating System Link (Exclusively for authorized admin vshivachaitanya7@gmail.com) */}
+            {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') &&
+              (user?.email || '').toLowerCase().trim() === 'vshivachaitanya7@gmail.com' && (
+                <Link
+                  to="/admin"
+                  id="nav-admin-link"
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center space-x-1.5 ${
+                    location.pathname === '/admin'
+                      ? 'neu-tab-active text-purple-300'
+                      : 'neu-button text-purple-400 hover:text-white border-purple-500/40'
+                  }`}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+                  <span>{t('nav.admin')}</span>
+                </Link>
+              )}
           </nav>
         </div>
 
