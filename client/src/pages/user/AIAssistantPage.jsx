@@ -19,6 +19,11 @@ import {
   Flame,
   Maximize2,
   Minimize2,
+  Paperclip,
+  X,
+  ChevronDown,
+  ChevronUp,
+  FileCheck,
 } from 'lucide-react';
 import {
   fetchAiSessions,
@@ -71,6 +76,9 @@ export const AIAssistantPage = () => {
   const [ragQuery, setRagQuery] = useState('');
   const [isSolverOpen, setIsSolverOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [attachedFile, setAttachedFile] = useState(null);
+  const [showMobileSessions, setShowMobileSessions] = useState(false);
+  const fileInputRef = useRef(null);
 
   // 1. Fetch user's private sessions on mount
   useEffect(() => {
@@ -106,14 +114,60 @@ export const AIAssistantPage = () => {
     }
   };
 
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type.includes('text') || file.name.endsWith('.txt')) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setAttachedFile({
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          content: event.target.result,
+        });
+      };
+      reader.readAsText(file);
+    } else {
+      // Store PDF or document metadata
+      setAttachedFile({
+        name: file.name,
+        size: file.size,
+        type: file.type || 'application/pdf',
+        content: `[Attached Document: ${file.name}, ${(file.size / 1024).toFixed(1)} KB]`,
+      });
+    }
+  };
+
+  const handleRemoveAttachedFile = () => {
+    setAttachedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!inputMessage.trim() || isSending) return;
+    const promptText = inputMessage.trim();
+    if (!promptText && !attachedFile) return;
+    if (isSending) return;
+
+    let fullMessage = promptText;
+    if (attachedFile) {
+      const fileHeader = `📎 [Attached File: ${attachedFile.name} (${(attachedFile.size / 1024).toFixed(1)} KB)]`;
+      if (!fullMessage) {
+        fullMessage = `${fileHeader}\nPlease examine this attached syllabus/exam document and provide a complete summary of its questions, formulas, and concepts.`;
+      } else {
+        fullMessage = `${fileHeader}\n${fullMessage}`;
+      }
+      if (attachedFile.content && !attachedFile.content.startsWith('[Attached')) {
+        fullMessage += `\n\n--- Document Text Content ---\n${attachedFile.content.slice(0, 3000)}`;
+      }
+    }
 
     if (!activeSessionId) {
       dispatch(
         createAiSession({
-          title: inputMessage.slice(0, 30) + '...',
+          title: (promptText || attachedFile?.name || 'New Query').slice(0, 30) + '...',
           subjectId: subjects[0]?.id || null,
         })
       ).then((res) => {
@@ -121,7 +175,7 @@ export const AIAssistantPage = () => {
           dispatch(
             sendAiMessage({
               sessionId: res.payload.id,
-              message: inputMessage,
+              message: fullMessage,
               collegeId: college?.id,
               departmentId: department?.id,
               subjectId: subjects[0]?.id,
@@ -133,14 +187,17 @@ export const AIAssistantPage = () => {
       dispatch(
         sendAiMessage({
           sessionId: activeSessionId,
-          message: inputMessage,
+          message: fullMessage,
           collegeId: college?.id,
           departmentId: department?.id,
           subjectId: subjects[0]?.id,
         })
       );
     }
+
     setInputMessage('');
+    setAttachedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleRagSearch = (e) => {
@@ -277,10 +334,25 @@ export const AIAssistantPage = () => {
         )}
       </div>
 
+      {/* Mobile Sessions Toggle Bar */}
+      <div className="lg:hidden">
+        <button
+          type="button"
+          onClick={() => setShowMobileSessions(!showMobileSessions)}
+          className="w-full py-2.5 px-4 rounded-2xl neu-flat text-xs font-bold text-slate-300 flex items-center justify-between"
+        >
+          <span className="flex items-center space-x-2">
+            <MessageSquare className="w-3.5 h-3.5 text-brand-400" />
+            <span>Chat Sessions ({sessions.length})</span>
+          </span>
+          {showMobileSessions ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+        </button>
+      </div>
+
       {/* Main Two-Column Chat Experience with Expanded Viewport */}
       <div className={`grid grid-cols-1 lg:grid-cols-4 gap-6 ${isFullScreen ? 'min-h-[calc(100vh-160px)]' : 'min-h-[680px]'}`}>
-        {/* Left Column: Private Sessions Sidebar */}
-        <div className="lg:col-span-1 rounded-3xl neu-flat p-4 flex flex-col justify-between space-y-3">
+        {/* Left Column: Private Sessions Sidebar (Collapsible on mobile) */}
+        <div className={`lg:col-span-1 rounded-3xl neu-flat p-4 flex flex-col justify-between space-y-3 ${showMobileSessions ? 'block' : 'hidden lg:flex'}`}>
           <div>
             <div className="flex items-center justify-between mb-3 px-1">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -431,16 +503,65 @@ export const AIAssistantPage = () => {
             ))}
           </div>
 
+          {/* Attached Document Preview Badge */}
+          {attachedFile && (
+            <div className="mt-2.5 p-2 px-3 rounded-xl bg-brand-500/15 border border-brand-500/40 flex items-center justify-between text-xs animate-fade-in">
+              <div className="flex items-center space-x-2 text-brand-300 min-w-0">
+                <Paperclip className="w-4 h-4 text-brand-400 flex-shrink-0" />
+                <span className="font-bold truncate max-w-[200px] sm:max-w-xs">{attachedFile.name}</span>
+                <span className="text-[10px] text-slate-400 flex-shrink-0">
+                  ({(attachedFile.size / 1024).toFixed(1)} KB)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleRemoveAttachedFile}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                title="Remove attached file"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* Bottom Prompt Input */}
-          <form onSubmit={handleSendMessage} className="mt-2 flex items-center space-x-2">
-            <div className="relative flex-1">
+          <form onSubmit={handleSendMessage} className="mt-2 flex items-center space-x-1.5 sm:space-x-2">
+            {/* Hidden File Input for RAG Attachment */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.txt"
+              className="hidden"
+            />
+
+            {/* Direct File Upload Button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              id="rag-chat-file-upload-btn"
+              title="Upload file or PDF to solve directly with AI"
+              className={`p-3 rounded-2xl neu-button transition-all flex items-center justify-center ${
+                attachedFile
+                  ? 'text-brand-400 border-brand-500/40 bg-brand-500/10'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
+
+            <div className="relative flex-1 min-w-0">
               <input
                 type="text"
                 id="ai-prompt-input"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Ask anything about your curriculum, formulas, or exam questions (e.g. Part-A 2 marks)..."
-                className="w-full px-4 py-3 rounded-2xl neu-pressed text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                placeholder={
+                  attachedFile
+                    ? `Ask questions about ${attachedFile.name}...`
+                    : "Ask anything about your syllabus or exam questions (e.g. Part-A 2 marks)..."
+                }
+                className="w-full px-3.5 sm:px-4 py-3 rounded-2xl neu-pressed text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               />
             </div>
 
@@ -448,9 +569,9 @@ export const AIAssistantPage = () => {
 
             <button
               type="submit"
-              disabled={isSending || !inputMessage.trim()}
+              disabled={isSending || (!inputMessage.trim() && !attachedFile)}
               id="send-ai-prompt-btn"
-              className="p-3 rounded-2xl neu-button text-brand-400 hover:text-white shadow-glow disabled:opacity-40 transition-all"
+              className="p-3 rounded-2xl neu-button text-brand-400 hover:text-white shadow-glow disabled:opacity-40 transition-all flex-shrink-0"
             >
               <Send className="w-4 h-4" />
             </button>

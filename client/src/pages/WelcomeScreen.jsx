@@ -141,8 +141,8 @@ export const WelcomeScreen = () => {
       </div>
 
       {/* Bottom info */}
-      <footer className="max-w-7xl mx-auto w-full px-6 py-6 text-center text-xs text-slate-500 z-10 border-t border-dark-border/40">
-        Studix Architecture Spec v1.0 • React 19 + Express + Supabase RLS
+      <footer className="max-w-7xl mx-auto w-full px-6 py-6 text-center text-xs text-slate-400 z-10 border-t border-dark-border/40">
+        © 2026 Studix. Developed by <span className="text-brand-400 font-bold">Shiva Chaitanya</span>. All rights reserved.
       </footer>
     </div>
   );

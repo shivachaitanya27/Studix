@@ -97,15 +97,15 @@ export const Navbar = () => {
 
   return (
     <header className="sticky top-0 z-40 w-full neu-flat backdrop-blur-md transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Left: Brand Logo & Title */}
-        <div className="flex items-center space-x-5">
-          <Link to="/dashboard" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 rounded-xl neu-button flex items-center justify-center text-brand-400 group-hover:scale-105 transition-transform">
-              <GraduationCap className="w-6 h-6" />
+        <div className="flex items-center space-x-3 sm:space-x-5">
+          <Link to="/dashboard" className="flex items-center space-x-2 sm:space-x-3 group">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl neu-button flex items-center justify-center text-brand-400 group-hover:scale-105 transition-transform">
+              <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <span className="text-xl font-black tracking-tight brand-title-text">
+              <span className="text-lg sm:text-xl font-black tracking-tight brand-title-text">
                 STUDIX
               </span>
 

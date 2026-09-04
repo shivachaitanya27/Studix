@@ -83,14 +83,14 @@ export const AuthLayout = () => {
         </div>
 
         {/* Footer info */}
-        <div className="text-xs text-slate-500 flex items-center justify-between border-t border-dark-border/40 pt-4">
-          <span>© 2026 Studix Enterprise Systems</span>
+        <div className="text-xs text-slate-400 flex items-center justify-between border-t border-dark-border/40 pt-4">
+          <span>© 2026 Studix • Developed by <strong className="text-brand-400">Shiva Chaitanya</strong></span>
           <div className="flex space-x-3">
-            <span className="hover:text-slate-400 cursor-pointer">Security</span>
+            <span className="hover:text-slate-300 cursor-pointer">Security</span>
             <span>•</span>
-            <span className="hover:text-slate-400 cursor-pointer">Compliance</span>
+            <span className="hover:text-slate-300 cursor-pointer">Privacy</span>
             <span>•</span>
-            <span className="hover:text-slate-400 cursor-pointer">Supabase Core</span>
+            <span className="text-brand-400 font-medium">Verified Platform</span>
           </div>
         </div>
       </div>
@@ -124,8 +124,8 @@ export const AuthLayout = () => {
         </div>
 
         {/* Mobile Footer */}
-        <div className="lg:hidden text-center text-[11px] text-slate-500 pt-4">
-          <span>© 2026 Studix Academic Intelligence</span>
+        <div className="lg:hidden text-center text-[11px] text-slate-400 pt-4">
+          <span>© 2026 Studix • Developed by <strong className="text-brand-400">Shiva Chaitanya</strong></span>
         </div>
       </div>
     </div>

@@ -207,6 +207,16 @@ export const ragService = {
     }
 
     // Turn 2: Synthesize step-by-step solution based on chosen preferences
+    const isAllQuestions =
+      questionSelection === 'ALL' ||
+      questionSelection === 'ALL_QUESTIONS' ||
+      questionSelection === 'SOLVE_ALL' ||
+      questionSelection.toLowerCase().includes('all questions');
+
+    const promptQuestionContext = isAllQuestions
+      ? `EXAM PAPER COMPLETE SOLUTION KEY:\nSolve ALL extracted questions from this exam paper comprehensively in order (Q1, Q2, Q3, etc.). For each question, provide:\n1. Question Title & Number\n2. Concise definition / formula / law\n3. Detailed step-by-step solution / mathematical derivation / diagram (Mermaid/ASCII)\n4. University exam scoring criteria and key takeaways.`
+      : `Question to Solve: "${questionSelection}"\nProvide the complete, step-by-step university exam solution in clean Markdown:`;
+
     const solverPrompt = [
       {
         role: 'system',
@@ -225,11 +235,12 @@ export const ragService = {
         role: 'user',
         content:
           `Paper Context: "${paperTitle}"\n` +
-          `Question to Solve: "${questionSelection}"\n` +
-          `Target Marks: ${marks} Marks\n` +
+          `Content Snippet: "${paperContext.substring(0, 4000)}"\n` +
+          `Scope: ${isAllQuestions ? 'ALL QUESTIONS IN EXAM PAPER' : questionSelection}\n` +
+          `Target Marks: ${marks} Marks per question\n` +
           `Requested Format: ${format}\n` +
           `Style: ${explanationStyle}\n\n` +
-          'Provide the complete, step-by-step university exam solution in clean Markdown:',
+          promptQuestionContext,
       },
     ];
 

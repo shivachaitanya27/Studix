@@ -23,6 +23,19 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
 
+  const [viewMode, setViewMode] = useState('pdf'); // 'pdf' | 'ocr'
+
+  const handleOpenNativeApp = (url) => {
+    if (!url) return;
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const handleBookmark = (e) => {
     e.stopPropagation();
     dispatch(toggleBookmark(resource.id));
@@ -49,171 +62,253 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
   const formattedType = resource.resource_type?.replace(/_/g, ' ');
 
   return (
-    <div className="p-5 rounded-2xl neu-flat hover:neu-convex transition-all flex flex-col justify-between group relative overflow-hidden">
-      {/* Top Meta Row */}
+    <div
+      onClick={() => setIsPreviewOpen(true)}
+      className="p-5 rounded-3xl neu-flat hover:border-brand-500/30 transition-all duration-300 group cursor-pointer flex flex-col justify-between relative overflow-hidden"
+    >
       <div>
-        <div className="flex items-start justify-between gap-2 mb-3">
+        {/* Card Header: Type Badge & Bookmark */}
+        <div className="flex items-center justify-between gap-2 mb-3">
           <span
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider border ${badgeClass}`}
+            className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border shadow-sm ${badgeClass}`}
           >
             {formattedType}
           </span>
 
-          <button
-            onClick={handleBookmark}
-            title={isBookmarked ? 'Remove Bookmark' : 'Save Bookmark'}
-            className={`p-2 rounded-xl neu-button transition-colors ${
-              isBookmarked
-                ? 'text-amber-400 active'
-                : 'text-slate-400 hover:text-amber-300'
-            }`}
-          >
-            <Bookmark
-              className={`w-4 h-4 ${isBookmarked ? 'fill-amber-400' : ''}`}
-            />
-          </button>
+          <div className="flex items-center space-x-1.5">
+            {resource.is_verified && (
+              <span
+                className="p-1.5 rounded-lg neu-pressed text-accent-emerald flex items-center justify-center"
+                title="Verified Authentic Academic Material"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+              </span>
+            )}
+
+            <button
+              type="button"
+              onClick={handleBookmark}
+              className={`p-1.5 rounded-xl neu-button transition-colors ${
+                isBookmarked
+                  ? 'text-amber-400 active'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title={isBookmarked ? 'Remove Bookmark' : 'Bookmark Resource'}
+            >
+              <Bookmark
+                className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`}
+              />
+            </button>
+          </div>
         </div>
 
         {/* Title */}
-        <h4 className="text-sm font-bold text-white group-hover:text-brand-300 transition-colors line-clamp-2 mb-2">
+        <h3 className="text-sm font-bold text-white group-hover:text-brand-300 transition-colors line-clamp-2 leading-snug">
           {resource.title}
-        </h4>
+        </h3>
 
-        {/* Subject & Code */}
-        {resource.subject && (
-          <div className="flex items-center space-x-2 text-xs text-slate-300 mb-3">
-            <span className="px-2 py-0.5 rounded-md neu-pressed text-[10px] font-bold text-brand-300">
-              {resource.subject.code}
+        {/* Academic Hierarchy Context */}
+        <div className="mt-3 space-y-1 text-xs text-slate-400">
+          <div className="flex items-center space-x-1.5 truncate">
+            <span className="font-semibold text-slate-300">
+              {resource.subject?.name || 'Academic Core'}
             </span>
-            <span className="truncate max-w-[180px] text-slate-400 text-[11px]">
-              {resource.subject.name}
-            </span>
+            {resource.subject?.code && (
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded neu-pressed text-brand-300">
+                {resource.subject.code}
+              </span>
+            )}
           </div>
-        )}
 
-        {/* Year & Semester Pill */}
-        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 mb-3">
-          <span className="flex items-center space-x-1">
-            <Calendar className="w-3.5 h-3.5 text-slate-500" />
-            <span>Year {resource.year}, Sem {resource.semester}</span>
-          </span>
-          <span>•</span>
-          <span className="flex items-center space-x-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-accent-emerald" />
-            <span className="text-accent-emerald font-medium">AI Verified</span>
-          </span>
+          <div className="flex items-center space-x-2 text-[11px] text-slate-500">
+            <span>Year {resource.year || 1}</span>
+            <span>•</span>
+            <span>Semester {resource.semester || 1}</span>
+            {resource.college?.code && (
+              <>
+                <span>•</span>
+                <span className="text-brand-400 font-bold">{resource.college.code}</span>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Bottom Footer Info & Actions */}
-      <div className="pt-3 border-t border-slate-700/30 flex items-center justify-between text-xs">
-        <div className="flex items-center space-x-1 text-[10px] text-slate-500 truncate max-w-[130px]">
+      {/* Card Footer: Metadata & Quick Preview Button */}
+      <div className="mt-4 pt-3 border-t border-slate-700/30 flex items-center justify-between text-xs">
+        <div className="flex items-center space-x-1 text-[11px] text-slate-500">
           <User className="w-3 h-3" />
-          <span className="truncate">{resource.uploader?.full_name || 'Verified Faculty'}</span>
+          <span className="truncate max-w-[100px]">
+            {resource.uploader?.full_name || 'Campus Student'}
+          </span>
         </div>
 
-        <div className="flex items-center space-x-1.5">
-          <button
-            onClick={() => setIsPreviewOpen(true)}
-            className="p-1.5 rounded-lg neu-button text-accent-cyan hover:text-white flex items-center space-x-1 text-[11px]"
-            title="Preview document in app"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span className="font-semibold text-[10px]">Preview</span>
-          </button>
-
-          <button
-            onClick={() => window.open(resource.file_url, '_blank')}
-            className="p-1.5 rounded-lg neu-button text-slate-300 hover:text-white flex items-center space-x-1 text-[11px]"
-            title="Open / Download PDF directly"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span className="font-semibold text-[10px]">PDF</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsPreviewOpen(true);
+          }}
+          className="px-3 py-1.5 rounded-xl neu-button text-[11px] font-bold text-brand-300 hover:text-white flex items-center space-x-1"
+        >
+          <Eye className="w-3.5 h-3.5" />
+          <span>View PDF</span>
+        </button>
       </div>
 
-      {/* Embedded In-App Document Preview Modal */}
+      {/* Document Inspector & Preview Modal */}
       {isPreviewOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="fixed inset-0 bg-black/75 backdrop-blur-sm"
-            onClick={() => setIsPreviewOpen(false)}
-          />
-          <div className="relative w-full max-w-2xl rounded-3xl neu-flat p-6 z-10 flex flex-col max-h-[90vh] overflow-hidden space-y-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="relative w-full max-w-4xl bg-dark-card border border-dark-border rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="flex items-start justify-between pb-3 border-b border-slate-700/30">
-              <div className="space-y-1">
-                <span className="px-2 py-0.5 rounded text-[10px] font-black neu-pressed text-brand-300">
-                  {resource.resource_type}
-                </span>
-                <h3 className="text-sm font-bold text-white max-w-lg line-clamp-1">
+            <div className="flex items-start justify-between pb-3 border-b border-slate-700/30 gap-2">
+              <div className="space-y-1 flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-black neu-pressed text-brand-300">
+                    {formattedType}
+                  </span>
+                  <span className="text-[11px] text-slate-400 hidden sm:inline">
+                    {resource.subject?.code} • Year {resource.year}, Sem {resource.semester}
+                  </span>
+                </div>
+                <h3 className="text-sm sm:text-base font-bold text-white truncate">
                   {resource.title}
                 </h3>
-                <p className="text-[11px] text-slate-400">
-                  {resource.subject?.name} ({resource.subject?.code}) • Year {resource.year}, Sem {resource.semester}
-                </p>
+              </div>
+
+              {/* View Mode Switcher */}
+              <div className="flex items-center gap-1.5 p-1 rounded-xl neu-pressed">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('pdf')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                    viewMode === 'pdf'
+                      ? 'bg-brand-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('ocr')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                    viewMode === 'ocr'
+                      ? 'bg-brand-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Text
+                </button>
               </div>
 
               <button
                 onClick={() => setIsPreviewOpen(false)}
-                className="p-1.5 rounded-xl neu-button text-slate-400 hover:text-white"
+                className="p-1.5 rounded-xl neu-button text-slate-400 hover:text-white ml-1"
+                aria-label="Close Preview"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
+            {/* Mobile Native App Intent Prompt Bar */}
+            {resource.file_url && (
+              <div className="my-2.5 p-2.5 sm:p-3 rounded-2xl neu-flat bg-brand-500/10 border border-brand-500/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                <div className="flex items-center space-x-2 text-xs">
+                  <FileText className="w-4 h-4 text-brand-400 flex-shrink-0" />
+                  <span className="text-slate-200 text-xs font-medium">
+                    Open in preferred viewer on your mobile phone:
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenNativeApp(resource.file_url)}
+                    className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl neu-button bg-brand-600/30 hover:bg-brand-600/50 text-white font-bold text-xs flex items-center justify-center space-x-1.5 border border-brand-500/50 shadow-glow"
+                    title="Prompts mobile OS to choose Google Drive, PDF Viewer, Adobe Acrobat, or Docs"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-brand-300" />
+                    <span>Open in Drive / PDF App</span>
+                  </button>
+
+                  <a
+                    href={resource.file_url}
+                    download={`${resource.title || 'studix-document'}.pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-2 rounded-xl neu-button text-xs font-bold text-slate-300 hover:text-white flex items-center justify-center space-x-1"
+                  >
+                    <Download className="w-3.5 h-3.5 text-accent-cyan" />
+                    <span className="hidden sm:inline">Save</span>
+                  </a>
+                </div>
+              </div>
+            )}
+
             {/* Document Content / Embedded Preview Frame */}
-            <div className="flex-1 rounded-2xl neu-pressed overflow-hidden min-h-[340px] flex flex-col">
-              {resource.file_url && resource.file_url.toLowerCase().includes('.pdf') ? (
+            <div className="flex-1 rounded-2xl neu-pressed overflow-hidden min-h-[360px] sm:min-h-[460px] flex flex-col relative bg-slate-950">
+              {viewMode === 'pdf' && resource.file_url ? (
                 <iframe
-                  src={resource.file_url}
+                  src={`https://docs.google.com/viewer?url=${encodeURIComponent(
+                    resource.file_url
+                  )}&embedded=true`}
                   title={resource.title}
-                  className="w-full h-full min-h-[340px] rounded-2xl border-0"
+                  className="w-full h-full min-h-[360px] sm:min-h-[460px] rounded-2xl border-0"
+                  onError={() => setViewMode('ocr')}
                 />
               ) : (
-
-                <div className="p-5 space-y-3 text-xs text-slate-200">
+                <div className="p-4 sm:p-5 space-y-3 text-xs text-slate-200 overflow-y-auto max-h-[50vh]">
                   <div className="flex items-center space-x-2 text-brand-400 font-bold">
                     <FileText className="w-4 h-4" />
-                    <span>OCR Extracted Academic Content Summary</span>
+                    <span>Extracted Academic Document Text</span>
                   </div>
-                  <p className="text-xs text-slate-300 leading-relaxed bg-dark-bg/60 p-4 rounded-xl">
-                    {resource.ocr_extracted_text || 'Document verified by Studix Academic Inspection System.'}
-                  </p>
-                  <p className="text-[10px] text-slate-500 font-mono">
-                    SHA-256 Hash: {resource.file_hash}
-                  </p>
+                  <div className="text-xs text-slate-300 leading-relaxed bg-dark-bg/80 p-4 rounded-xl font-mono whitespace-pre-wrap select-text border border-slate-800">
+                    {resource.ocr_extracted_text ||
+                      'No OCR text extracted yet. Please use the "Open in Drive / PDF App" button above to view the original PDF document.'}
+                  </div>
+                  {resource.file_hash && (
+                    <p className="text-[10px] text-slate-500 font-mono">
+                      SHA-256 Checksum: {resource.file_hash}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
 
             {/* Modal Footer Controls */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-700/30">
+            <div className="flex items-center justify-between pt-3 border-t border-slate-700/30 mt-2 gap-2">
               <button
+                type="button"
                 onClick={() => {
                   setIsPreviewOpen(false);
                   navigate('/ai-assistant');
                 }}
-                className="px-4 py-2 rounded-xl neu-button text-xs font-bold text-amber-300 hover:text-white flex items-center space-x-1.5"
+                className="px-3.5 py-2 rounded-xl neu-button text-xs font-bold text-amber-300 hover:text-white flex items-center space-x-1.5"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Solve Questions with AI</span>
+                <span>Solve with Exam AI</span>
               </button>
 
               <div className="flex items-center space-x-2">
                 <button
+                  type="button"
                   onClick={() => setIsPreviewOpen(false)}
                   className="px-4 py-2 rounded-xl neu-button text-xs text-slate-400 hover:text-white font-semibold"
                 >
                   Close
                 </button>
                 <button
-                  onClick={() => window.open(resource.file_url, '_blank')}
-                  className="px-4 py-2 rounded-xl neu-button text-xs font-bold text-white flex items-center space-x-1.5 bg-brand-500/10 border-brand-500/40"
+                  type="button"
+                  onClick={() => handleOpenNativeApp(resource.file_url)}
+                  className="px-3.5 py-2 rounded-xl neu-button text-xs font-bold text-white flex items-center space-x-1.5 bg-brand-500/10 border-brand-500/40"
                 >
                   <ExternalLink className="w-3.5 h-3.5 text-brand-400" />
-                  <span>Open Full PDF in New Tab</span>
+                  <span className="hidden sm:inline">Open Native PDF</span>
+                  <span className="sm:hidden">Open</span>
                 </button>
               </div>
             </div>
@@ -225,4 +320,3 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
 };
 
 export default ResourceCard;
-
