@@ -296,7 +296,7 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
                 <span className="text-slate-500 dark:text-slate-400 text-[11px]">Enrolled Institution:</span>
                 <span className="font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse" />
-                  {user?.college?.name || user?.college?.code || 'Dhanalakshmi Srinivasan University'}
+                  {user?.college?.name || user?.college?.code || 'University Campus'}
                 </span>
               </div>
               <div className="flex items-center justify-between">

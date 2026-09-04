@@ -37,9 +37,6 @@ export const UserLayout = () => {
             <p className="font-semibold text-slate-300">
               © 2026 Studix. Developed by <span className="text-brand-400 font-bold">Shiva Chaitanya</span>. All rights reserved.
             </p>
-            <p className="text-[10px] text-slate-400 mt-0.5">
-              Academic Intelligence & Resource Management Platform
-            </p>
           </div>
           <div className="flex items-center space-x-3 text-xs">
             <Link to="/dashboard" className="text-slate-300 hover:text-white font-medium">

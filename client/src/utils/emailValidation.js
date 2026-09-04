@@ -29,7 +29,7 @@ export function isCollegeEmail(email) {
 }
 
 export function getCollegeEmailErrorMessage() {
-  return 'Access is exclusively restricted to Dhanalakshmi Srinivasan University accounts (@dsuniversity.ac.in).';
+  return 'Access is exclusively restricted to verified university accounts (@dsuniversity.ac.in).';
 }
 
 export function extractDomain(email) {
@@ -38,7 +38,7 @@ export function extractDomain(email) {
 }
 
 /**
- * Infer campus metadata - strictly Dhanalakshmi Srinivasan University (DSU)
+ * Infer campus metadata
  */
 export function inferCampusInfo(email) {
   const domain = extractDomain(email);
@@ -49,9 +49,10 @@ export function inferCampusInfo(email) {
 
   return {
     domain: domain === 'gmail.com' && cleanEmail === SUPER_ADMIN_EMAIL ? ALLOWED_UNIVERSITY_DOMAIN : domain,
-    campusName: 'Dhanalakshmi Srinivasan University (DSU Trichy)',
+    campusName: 'University Campus',
     campusCode: 'DSU',
     isRecognized: isAllowed,
   };
 }
+
 

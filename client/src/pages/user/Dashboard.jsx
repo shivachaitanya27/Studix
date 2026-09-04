@@ -165,7 +165,7 @@ export const Dashboard = () => {
               </h1>
               <div className="text-xs sm:text-sm text-slate-300 mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2.5">
                 <span className="font-bold text-white tracking-tight">
-                  {college?.name || 'Dhanalakshmi Srinivasan University Trichy'}
+                  {college?.name || 'University Campus'}
                 </span>
                 <span className="text-slate-500">•</span>
                 <span className="text-brand-300 font-bold">
@@ -200,7 +200,7 @@ export const Dashboard = () => {
             <div
               id="enrolled-campus-badge"
               className="px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl neu-pressed text-slate-300 text-xs font-semibold flex items-center justify-center space-x-1.5 select-none"
-              title="Dhanalakshmi Srinivasan University verified campus stream"
+              title="Verified campus stream"
             >
               <span className="w-2 h-2 rounded-full bg-accent-emerald" />
               <span className="text-brand-300 font-extrabold">{college?.code || 'DSU'}</span>

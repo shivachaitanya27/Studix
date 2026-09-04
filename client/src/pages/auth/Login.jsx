@@ -265,7 +265,7 @@ export const Login = () => {
             <span>
               {loginRole === 'ADMIN'
                 ? 'Designated Super Admin sign-in'
-                : 'Exclusively for Dhanalakshmi Srinivasan University (@dsuniversity.ac.in)'}
+                : 'Exclusively for verified university accounts (@dsuniversity.ac.in)'}
             </span>
           </p>
         </div>

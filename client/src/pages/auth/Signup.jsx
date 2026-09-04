@@ -159,7 +159,7 @@ export const Signup = () => {
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Your academic syllabus, past papers, and AI exam tutor are automatically mapped to Dhanalakshmi Srinivasan University.
+                  Your academic syllabus, past papers, and AI exam tutor are automatically mapped to your department and semester.
                 </p>
               </div>
             </motion.div>
