@@ -253,40 +253,40 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md animate-fade-in flex items-center justify-center p-3 sm:p-5">
       <div
         className="fixed inset-0"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-2xl bg-white dark:bg-[#131722] border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl z-10 max-h-[92vh] overflow-y-auto transition-colors">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 mb-5">
+      <div className="relative w-full max-w-xl my-auto bg-white dark:bg-[#131722] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl z-10 max-h-[82vh] sm:max-h-[85vh] flex flex-col overflow-hidden transition-colors">
+        {/* Modal Header - Fixed at Top */}
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 bg-white dark:bg-[#131722]">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-brand-500/10 dark:bg-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-brand-500/10 dark:bg-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400">
               <GraduationCap className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+              <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight">
                 Account & Academic Settings
               </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Manage your academic stream progression, security, and preferences
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[220px] sm:max-w-none">
+                Academic stream progression, security & preferences
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2.5 rounded-xl neu-button text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+            className="p-2 rounded-xl neu-button text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
             title="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex space-x-1.5 sm:space-x-2 border-b border-slate-200 dark:border-slate-800 pb-3 overflow-x-auto scrollbar-none">
+        {/* Tab Navigation - Fixed underneath Header */}
+        <div className="flex space-x-1 sm:space-x-1.5 px-4 sm:px-5 py-2.5 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 bg-slate-50/60 dark:bg-slate-900/40 overflow-x-auto scrollbar-none">
           {[
             { id: 'stream', label: 'Academic Stream', icon: GraduationCap },
             { id: 'security', label: 'Security & Password', icon: Lock },
@@ -299,21 +299,23 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 sm:space-x-2 whitespace-nowrap ${
+                className={`px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
                   isActive
                     ? 'neu-tab-active text-brand-600 dark:text-brand-300 font-extrabold border border-brand-500/30'
                     : 'neu-button text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                <Icon className="w-4 h-4 text-brand-400 flex-shrink-0" />
+                <Icon className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
                 <span>{tab.label}</span>
               </button>
             );
           })}
         </div>
 
-        {/* TAB 0: Academic Stream (Year & Semester Progression) */}
-        {activeTab === 'stream' && (
+        {/* Scrollable Tab Content Area */}
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+          {/* TAB 0: Academic Stream (Year & Semester Progression) */}
+          {activeTab === 'stream' && (
           <form onSubmit={handleUpdateStream} className="space-y-4">
             <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-start space-x-3">
               <GraduationCap className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
@@ -882,6 +884,7 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
             <span>Settings saved successfully!</span>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

@@ -152,14 +152,14 @@ export const UploadModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
       {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0"
       />
 
       {/* Modal Container */}
@@ -167,7 +167,7 @@ export const UploadModal = ({ isOpen, onClose }) => {
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="relative w-full max-w-lg rounded-3xl neu-flat p-6 sm:p-7 z-10 overflow-hidden"
+        className="relative w-full max-w-lg my-auto rounded-3xl neu-flat p-5 sm:p-7 z-10 max-h-[85vh] overflow-y-auto flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-700/30 mb-5">

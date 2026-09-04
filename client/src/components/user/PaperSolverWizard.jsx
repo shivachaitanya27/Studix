@@ -90,14 +90,14 @@ export const PaperSolverWizard = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
       {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+        className="fixed inset-0"
       />
 
       {/* Modal Container */}
@@ -105,7 +105,7 @@ export const PaperSolverWizard = ({ isOpen, onClose }) => {
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="relative w-full max-w-2xl rounded-3xl neu-flat p-4 sm:p-7 z-10 max-h-[92vh] overflow-y-auto"
+        className="relative w-full max-w-2xl my-auto rounded-3xl neu-flat p-4 sm:p-7 z-10 max-h-[85vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-700/30 mb-5">

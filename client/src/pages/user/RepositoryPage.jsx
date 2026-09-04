@@ -63,14 +63,18 @@ export const RepositoryPage = () => {
   const subjectFilter = useSelector(selectSelectedSubjectFilter);
   const isLoading = useSelector(selectResourceLoading);
 
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const userDeptId = user?.department_id || user?.department?.id || department?.id;
+  const userCollegeId = user?.college_id || user?.college?.id || college?.id;
+
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedSemesterFilter, setSelectedSemesterFilter] = useState('');
 
-  // Cross-Department & Cross-College Filter State
-  const [selectedDeptFilter, setSelectedDeptFilter] = useState('ALL');
+  // Cross-Department & Cross-College Filter State (Admin Only)
+  const [selectedDeptFilter, setSelectedDeptFilter] = useState(isAdmin ? 'ALL' : (userDeptId || 'ALL'));
   const [departmentsList, setDepartmentsList] = useState([]);
   const [collegesList, setCollegesList] = useState([]);
-  const [selectedCollegeFilter, setSelectedCollegeFilter] = useState('ALL');
+  const [selectedCollegeFilter, setSelectedCollegeFilter] = useState(isAdmin ? 'ALL' : (userCollegeId || 'ALL'));
 
   useEffect(() => {
     api
@@ -98,19 +102,26 @@ export const RepositoryPage = () => {
   useEffect(() => {
     const params = {};
 
-    if (selectedCollegeFilter !== 'ALL') {
-      params.collegeId = selectedCollegeFilter;
-    } else if (college?.id && user?.role !== 'ADMIN') {
-      params.collegeId = college.id;
-    }
-
-    if (selectedDeptFilter !== 'ALL') {
-      params.departmentId = selectedDeptFilter;
+    if (isAdmin) {
+      if (selectedCollegeFilter !== 'ALL') {
+        params.collegeId = selectedCollegeFilter;
+      }
+      if (selectedDeptFilter !== 'ALL') {
+        params.departmentId = selectedDeptFilter;
+      }
+    } else {
+      // Normal students are strictly limited to their enrolled department and college
+      if (userCollegeId) {
+        params.collegeId = userCollegeId;
+      }
+      if (userDeptId) {
+        params.departmentId = userDeptId;
+      }
     }
 
     dispatch(fetchResources(params));
     dispatch(fetchUserBookmarks());
-  }, [dispatch, college?.id, selectedDeptFilter, selectedCollegeFilter, user?.role]);
+  }, [dispatch, isAdmin, userCollegeId, userDeptId, selectedDeptFilter, selectedCollegeFilter]);
 
 
   // Tab definitions
@@ -158,6 +169,11 @@ export const RepositoryPage = () => {
   // Filtered dataset with full multi-field tokenized matching
   const filteredList = (activeTab === 'BOOKMARKS' ? bookmarks : resources).filter(
     (item) => {
+      // 0. Department boundary: regular students are strictly bound to their enrolled department
+      if (!isAdmin && userDeptId && item.department_id && item.department_id !== userDeptId) {
+        return false;
+      }
+
       // 1. Tab category check
       if (activeTab === 'PAPERS') {
         if (!['SEMESTER_PAPER', 'PREVIOUS_PAPER'].includes(item.resource_type)) {
@@ -242,18 +258,20 @@ export const RepositoryPage = () => {
           <p className="text-xs sm:text-sm text-slate-400 mt-1 flex flex-wrap items-center gap-2">
             <span>Filtered for:</span>
             <span className="font-bold text-white">
-              {selectedCollegeFilter !== 'ALL'
+              {isAdmin && selectedCollegeFilter !== 'ALL'
                 ? collegesList.find((c) => c.id === selectedCollegeFilter)?.code || 'Campus'
-                : college?.code || 'University'}
+                : college?.code || user?.college?.code || 'University'}
             </span>
             <span>•</span>
             <span className="text-brand-300 font-bold">
-              {selectedDeptFilter === 'ALL'
-                ? 'All Departments'
-                : departmentsList.find((d) => d.id === selectedDeptFilter)?.name || department?.name || 'Department'}
+              {isAdmin
+                ? selectedDeptFilter === 'ALL'
+                  ? 'All Departments'
+                  : departmentsList.find((d) => d.id === selectedDeptFilter)?.name || department?.name || 'Department'
+                : department?.name || user?.department?.name || 'Department'}
             </span>
             <span>•</span>
-            <span className="text-amber-400 font-bold">Year {year || 1}, Sem {semester || 1}</span>
+            <span className="text-amber-400 font-bold">Year {year || user?.academic_year || 1}, Sem {semester || user?.semester || 1}</span>
           </p>
         </div>
 
@@ -275,77 +293,79 @@ export const RepositoryPage = () => {
         </div>
       </div>
 
-      {/* Cross-Department & Cross-Campus Filter Selector Strip */}
-      <div className="p-3 sm:p-4 rounded-2xl neu-flat flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex items-center space-x-2 text-xs font-bold text-slate-300">
-          <Building2 className="w-4 h-4 text-brand-400 flex-shrink-0" />
-          <span className="uppercase tracking-wider text-[11px] text-slate-400">Department:</span>
-        </div>
-
-        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 scrollbar-none flex-1">
-          <button
-            type="button"
-            onClick={() => setSelectedDeptFilter('ALL')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-              selectedDeptFilter === 'ALL'
-                ? 'neu-pressed border border-brand-500 bg-brand-500/20 text-brand-300 shadow-sm font-black'
-                : 'neu-button text-slate-400 hover:text-white'
-            }`}
-          >
-            🌐 All Departments
-          </button>
-
-          {(departmentsList.length > 0
-            ? departmentsList
-            : [
-                { id: 'd1000000-0000-0000-0000-000000000001', code: 'CSE', name: 'Computer Science' },
-                { id: 'd1000000-0000-0000-0000-000000000005', code: 'AI-DS', name: 'AI & Data Science' },
-                { id: 'd1000000-0000-0000-0000-000000000006', code: 'AIML', name: 'AI & Machine Learning' },
-                { id: 'd1000000-0000-0000-0000-000000000007', code: 'CYB', name: 'Cybersecurity' },
-                { id: 'd1000000-0000-0000-0000-000000000002', code: 'ECE', name: 'Electronics & Communication' },
-                { id: 'd1000000-0000-0000-0000-000000000003', code: 'EEE', name: 'Electrical & Electronics' },
-                { id: 'd1000000-0000-0000-0000-000000000004', code: 'IT', name: 'Information Technology' },
-                { id: 'd1000000-0000-0000-0000-000000000008', code: 'IOT', name: 'Internet of Things' },
-              ]
-          ).map((dept) => {
-            const isSelected = selectedDeptFilter === dept.id;
-            return (
-              <button
-                key={dept.id}
-                type="button"
-                onClick={() => setSelectedDeptFilter(dept.id)}
-                title={dept.name}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                  isSelected
-                    ? 'neu-pressed border border-accent-cyan bg-cyan-500/20 text-cyan-300 font-black shadow-sm'
-                    : 'neu-button text-slate-400 hover:text-white'
-                }`}
-              >
-                {dept.code}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Multi-College Selector for Admins */}
-        {user?.role === 'ADMIN' && collegesList.length > 0 && (
-          <div className="flex items-center space-x-2 shrink-0 border-t md:border-t-0 md:border-l border-slate-700/50 pt-2 md:pt-0 md:pl-3">
-            <School className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-            <select
-              value={selectedCollegeFilter}
-              onChange={(e) => setSelectedCollegeFilter(e.target.value)}
-              className="px-2.5 py-1.5 rounded-xl neu-pressed text-xs text-slate-200 focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">🏫 All Campuses</option>
-              {collegesList.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.code || c.name}
-                </option>
-              ))}
-            </select>
+      {/* Cross-Department & Cross-Campus Filter Selector Strip - Admin Only */}
+      {isAdmin && (
+        <div className="p-3 sm:p-4 rounded-2xl neu-flat flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center space-x-2 text-xs font-bold text-slate-300">
+            <Building2 className="w-4 h-4 text-brand-400 flex-shrink-0" />
+            <span className="uppercase tracking-wider text-[11px] text-slate-400">Department:</span>
           </div>
-        )}
-      </div>
+
+          <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 scrollbar-none flex-1">
+            <button
+              type="button"
+              onClick={() => setSelectedDeptFilter('ALL')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                selectedDeptFilter === 'ALL'
+                  ? 'neu-pressed border border-brand-500 bg-brand-500/20 text-brand-300 shadow-sm font-black'
+                  : 'neu-button text-slate-400 hover:text-white'
+              }`}
+            >
+              🌐 All Departments
+            </button>
+
+            {(departmentsList.length > 0
+              ? departmentsList
+              : [
+                  { id: 'd1000000-0000-0000-0000-000000000001', code: 'CSE', name: 'Computer Science' },
+                  { id: 'd1000000-0000-0000-0000-000000000005', code: 'AI-DS', name: 'AI & Data Science' },
+                  { id: 'd1000000-0000-0000-0000-000000000006', code: 'AIML', name: 'AI & Machine Learning' },
+                  { id: 'd1000000-0000-0000-0000-000000000007', code: 'CYB', name: 'Cybersecurity' },
+                  { id: 'd1000000-0000-0000-0000-000000000002', code: 'ECE', name: 'Electronics & Communication' },
+                  { id: 'd1000000-0000-0000-0000-000000000003', code: 'EEE', name: 'Electrical & Electronics' },
+                  { id: 'd1000000-0000-0000-0000-000000000004', code: 'IT', name: 'Information Technology' },
+                  { id: 'd1000000-0000-0000-0000-000000000008', code: 'IOT', name: 'Internet of Things' },
+                ]
+            ).map((dept) => {
+              const isSelected = selectedDeptFilter === dept.id;
+              return (
+                <button
+                  key={dept.id}
+                  type="button"
+                  onClick={() => setSelectedDeptFilter(dept.id)}
+                  title={dept.name}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                    isSelected
+                      ? 'neu-pressed border border-accent-cyan bg-cyan-500/20 text-cyan-300 font-black shadow-sm'
+                      : 'neu-button text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {dept.code}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Multi-College Selector for Admins */}
+          {collegesList.length > 0 && (
+            <div className="flex items-center space-x-2 shrink-0 border-t md:border-t-0 md:border-l border-slate-700/50 pt-2 md:pt-0 md:pl-3">
+              <School className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+              <select
+                value={selectedCollegeFilter}
+                onChange={(e) => setSelectedCollegeFilter(e.target.value)}
+                className="px-2.5 py-1.5 rounded-xl neu-pressed text-xs text-slate-200 focus:outline-none cursor-pointer"
+              >
+                <option value="ALL">🏫 All Campuses</option>
+                {collegesList.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.code || c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tactile Neumorphic Category Tabs */}
       <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
