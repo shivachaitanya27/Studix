@@ -94,6 +94,11 @@ export const UploadModal = ({ isOpen, onClose }) => {
       return;
     }
 
+    if (!subjectName || !subjectName.trim()) {
+      setErrorMessage('Please enter the subject name manually (e.g. Operating Systems, Circuit Theory, Machine Learning).');
+      return;
+    }
+
     setErrorMessage('');
     setSuccessMessage('');
     setIsProcessing(true);
@@ -109,8 +114,7 @@ export const UploadModal = ({ isOpen, onClose }) => {
     formData.append('file', file);
     formData.append('title', title || file.name);
     formData.append('resourceType', resourceType);
-    if (subjectId) formData.append('subjectId', subjectId);
-    if (subjectName) formData.append('subjectName', subjectName);
+    formData.append('subjectName', subjectName.trim());
     if (college?.id) formData.append('collegeId', college.id);
     if (department?.id) formData.append('departmentId', department.id);
     if (year) formData.append('year', year);
@@ -290,45 +294,26 @@ export const UploadModal = ({ isOpen, onClose }) => {
               </select>
             </div>
 
-            {/* Subject Selector with Text Typing Option */}
+            {/* Manual Subject Input */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                  Subject Name
+                  Subject Name <span className="text-rose-400">*</span>
                 </label>
-                <span className="text-[10px] text-brand-400 font-semibold">Type custom or choose</span>
+                <span className="text-[10px] text-amber-400 font-semibold">Enter manually</span>
               </div>
               <div className="relative">
                 <input
                   type="text"
-                  list="subjects-datalist"
                   value={subjectName}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSubjectName(val);
-                    const matched = subjects.find(
-                      (s) =>
-                        `[${s.code}] ${s.name}`.toLowerCase() === val.toLowerCase() ||
-                        s.name.toLowerCase() === val.toLowerCase() ||
-                        s.code.toLowerCase() === val.toLowerCase()
-                    );
-                    if (matched) {
-                      setSubjectId(matched.id);
-                    } else {
-                      setSubjectId('');
-                    }
-                  }}
-                  placeholder="Type subject name (e.g. Cloud Computing) or pick..."
+                  onChange={(e) => setSubjectName(e.target.value)}
+                  placeholder="e.g. Operating Systems, Cloud Computing, DBMS..."
+                  required
                   className="w-full px-3 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 placeholder-slate-500 bg-transparent focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
-                <datalist id="subjects-datalist">
-                  {subjects.map((sub) => (
-                    <option key={sub.id} value={`[${sub.code}] ${sub.name}`} />
-                  ))}
-                </datalist>
               </div>
-              <p className="text-[10px] text-slate-500 mt-1">
-                Type any custom subject name or pick from existing suggestions.
+              <p className="text-[10px] text-slate-400 mt-1">
+                Enter the exact course/subject title as in your syllabus.
               </p>
             </div>
           </div>

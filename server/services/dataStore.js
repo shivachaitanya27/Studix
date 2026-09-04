@@ -27,6 +27,48 @@ class MemoryStore {
     return this.colleges.filter((c) => c.is_active);
   }
 
+  async getOrCreateCollegeByDomain(domain, inferredInfo) {
+    if (!domain) return this.colleges[0];
+    const targetDomain = domain.toLowerCase().trim();
+    const match = this.colleges.find(
+      (c) =>
+        (c.domain && c.domain.toLowerCase() === targetDomain) ||
+        (targetDomain.includes('dsuniversity') && c.code === 'DSU')
+    );
+    if (match) return match;
+
+    const newCollege = {
+      id: `c-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      name: inferredInfo?.campusName || `${targetDomain.split('.')[0].toUpperCase()} University`,
+      code: inferredInfo?.campusCode || targetDomain.split('.')[0].toUpperCase().slice(0, 8),
+      domain: targetDomain,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    };
+    this.colleges.push(newCollege);
+
+    const standardDepts = [
+      { name: 'Computer Science and Engineering', code: 'CSE' },
+      { name: 'Electronics and Communication Engineering', code: 'ECE' },
+      { name: 'Electrical and Electronics Engineering', code: 'EEE' },
+      { name: 'Information Technology', code: 'IT' },
+      { name: 'Artificial Intelligence and Data Science', code: 'AI-DS' },
+      { name: 'Mechanical Engineering', code: 'MECH' },
+      { name: 'Civil Engineering', code: 'CIVIL' },
+    ];
+    for (const d of standardDepts) {
+      this.departments.push({
+        id: `d-${newCollege.id}-${d.code.toLowerCase()}`,
+        college_id: newCollege.id,
+        name: d.name,
+        code: d.code,
+        created_at: new Date().toISOString(),
+      });
+    }
+
+    return newCollege;
+  }
+
   async getCollegeById(id) {
     return this.colleges.find((c) => c.id === id) || null;
   }
@@ -361,6 +403,24 @@ export const dataStore = {
       }
     }
     return memoryStore.getColleges();
+  },
+
+  async getOrCreateCollegeByDomain(domain, inferredInfo) {
+    if (!domain) return memoryStore.colleges[0];
+    const targetDomain = domain.toLowerCase().trim();
+    if (isSupabaseConfigured && supabaseAdmin) {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('colleges')
+          .select('*')
+          .ilike('domain', targetDomain)
+          .maybeSingle();
+        if (!error && data) return data;
+      } catch (err) {
+        console.warn('Supabase getOrCreateCollegeByDomain notice:', err.message);
+      }
+    }
+    return memoryStore.getOrCreateCollegeByDomain(targetDomain, inferredInfo);
   },
 
   async getCollegeById(id) {

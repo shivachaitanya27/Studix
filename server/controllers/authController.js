@@ -49,8 +49,10 @@ export const authController = {
       });
     } catch (error) {
       console.error('Login error:', error);
-      return res.status(401).json({
+      const status = error.status || (error.code === 'ACCOUNT_NOT_FOUND' ? 404 : 401);
+      return res.status(status).json({
         success: false,
+        code: error.code || 'AUTH_FAILED',
         message: error.message || 'Authentication failed.'
       });
     }

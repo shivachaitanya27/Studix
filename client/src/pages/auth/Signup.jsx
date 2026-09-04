@@ -1,28 +1,30 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Sparkles } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Sparkles, GraduationCap } from 'lucide-react';
 import { signupUser, clearError, selectAuthLoading, selectAuthError } from '../../redux/authSlice.js';
 import { supabase } from '../../services/supabaseClient.js';
-import { isCollegeEmail, getCollegeEmailErrorMessage } from '../../utils/emailValidation.js';
+import { isCollegeEmail, getCollegeEmailErrorMessage, inferCampusInfo } from '../../utils/emailValidation.js';
 
 export const Signup = () => {
-
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const isLoading = useSelector(selectAuthLoading);
   const authError = useSelector(selectAuthError);
 
   const [formData, setFormData] = useState({
     fullName: '',
-    email: '',
+    email: location.state?.email || '',
     password: '',
     confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [validationError, setValidationError] = useState('');
+
+  const campusInfo = inferCampusInfo(formData.email);
 
 
   const handleChange = (e) => {
@@ -134,6 +136,29 @@ export const Signup = () => {
               className="w-full pl-10 pr-4 py-3 auth-input bg-dark-base border border-dark-border rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
             />
           </div>
+
+          {campusInfo?.isRecognized && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center space-x-2 shadow-sm"
+            >
+              <GraduationCap className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center space-x-1.5 flex-wrap">
+                  <span className="font-bold text-slate-300 text-[11px] uppercase tracking-wider">Campus Stream:</span>
+                  <span className="font-extrabold text-white truncate">{campusInfo.campusName}</span>
+                  <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-[10px] font-mono font-bold text-emerald-200">
+                    {campusInfo.campusCode}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Your academic syllabus, past papers, and AI exam tutor will be automatically mapped to this campus.
+                </p>
+              </div>
+            </motion.div>
+          )}
+
           <p className="text-[11px] text-amber-500 dark:text-amber-400 mt-1.5 flex items-center space-x-1 font-medium">
             <span>⚠️ Official college email required (.edu, .ac.in). Personal Gmail/Yahoo accounts are rejected.</span>
           </p>

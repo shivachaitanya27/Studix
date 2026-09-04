@@ -186,13 +186,48 @@ export const Login = () => {
         )}
       </div>
 
-      {/* Error Banner */}
-      {(authError || validationError) && (
+      {/* First-time registration banner */}
+      <div className="mb-5 p-3 rounded-2xl bg-brand-500/10 border border-brand-500/25 flex items-center justify-between text-xs text-slate-300">
+        <span className="text-[11px] text-slate-300">
+          First time here? <strong className="text-white">Create an account first</strong> before logging in.
+        </span>
+        <Link
+          to="/signup"
+          state={{ email: formData.email }}
+          className="text-xs font-bold text-brand-300 hover:text-white px-3 py-1.5 rounded-xl bg-brand-500/20 hover:bg-brand-500/30 border border-brand-500/40 transition-all flex items-center space-x-1 flex-shrink-0 ml-2"
+        >
+          <span>Sign Up</span>
+          <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
+
+      {/* Account Not Found Notice with Direct Sign Up CTA */}
+      {authError && (authError.toLowerCase().includes('create an account first') || authError.toLowerCase().includes('no account found')) ? (
+        <div className="mb-5 p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-500/40 text-amber-200 text-xs space-y-3 shadow-lg">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <span className="font-black text-amber-300 block text-sm mb-0.5">Account Not Found</span>
+              <p className="text-slate-300 leading-relaxed">
+                No registered account exists for <span className="font-mono text-amber-200 font-bold">{formData.email}</span>. First-time users must create an account first before logging in.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/signup', { state: { email: formData.email } })}
+            className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center space-x-2 shadow-glow transition-all cursor-pointer"
+          >
+            <span>Create Account First (Sign Up)</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (authError || validationError) ? (
         <div className="mb-5 p-3.5 rounded-xl auth-error-banner bg-rose-500/10 border border-rose-500/30 flex items-start space-x-3 text-rose-300 text-xs font-medium">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>{authError || validationError}</span>
         </div>
-      )}
+      ) : null}
 
       {/* Login Form */}
       <form onSubmit={handleSubmit} className="space-y-4">

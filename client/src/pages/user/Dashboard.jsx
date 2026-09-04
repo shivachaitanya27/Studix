@@ -241,8 +241,8 @@ export const Dashboard = () => {
             <BookOpen className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0">
-            <span className="text-lg sm:text-2xl font-black text-white">{subjects?.length || 4}</span>
-            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Enrolled Subjects</p>
+            <span className="text-lg sm:text-2xl font-black text-white">Full</span>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Syllabus Subjects</p>
           </div>
         </div>
 

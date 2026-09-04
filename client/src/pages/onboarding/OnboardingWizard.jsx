@@ -391,30 +391,21 @@ export const OnboardingWizard = () => {
                   })}
                 </div>
 
-                {/* Enrolled Subjects Preview */}
+                {/* Academic Stream Confirmation & Manual Subjects Info */}
                 <div className="mt-4 pt-4 border-t border-dark-border">
                   <div className="flex items-center space-x-2 text-xs font-bold text-slate-300 mb-2">
-                    <Layers className="w-4 h-4 text-brand-400" />
-                    <span>Curriculum Subjects Preview (Sem {selectedSemester})</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Academic Stream Selected</span>
                   </div>
-                  {subjects.length > 0 ? (
-                    <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
-                      {subjects.map((s) => (
-                        <div
-                          key={s.id}
-                          className="px-2.5 py-1 rounded-lg bg-dark-base border border-dark-border text-[11px] text-slate-300 flex items-center space-x-1.5"
-                        >
-                          <span className="font-semibold text-brand-300">{s.code}</span>
-                          <span>•</span>
-                          <span className="truncate max-w-[150px]">{s.name}</span>
-                        </div>
-                      ))}
+                  <div className="p-3 rounded-xl bg-dark-base border border-dark-border text-xs text-slate-300 space-y-1">
+                    <div className="flex items-center justify-between text-white font-bold">
+                      <span>{selectedDepartment?.name || selectedDepartment?.code || 'Department'}</span>
+                      <span className="text-brand-300">Year {selectedYear} • Semester {selectedSemester}</span>
                     </div>
-                  ) : (
-                    <p className="text-xs text-slate-500 italic">
-                      Subjects will load upon confirming department and semester.
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      💡 <strong>Custom Syllabus:</strong> You can upload, search, and study papers for any subject in your syllabus by simply entering the subject name manually.
                     </p>
-                  )}
+                  </div>
                 </div>
               </motion.div>
             )}

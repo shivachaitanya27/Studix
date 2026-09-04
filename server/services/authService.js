@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { supabaseClient, supabaseAdmin, isSupabaseConfigured } from '../config/supabase.js';
 import { dataStore } from './dataStore.js';
-import { isCollegeEmail, getCollegeEmailErrorMessage } from '../utils/emailValidation.js';
+import { isCollegeEmail, getCollegeEmailErrorMessage, extractDomain, inferCampusInfo } from '../utils/emailValidation.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'studix_enterprise_jwt_super_secure_secret_2026';
 
@@ -11,6 +11,17 @@ export const authService = {
   async signup({ email, password, fullName, collegeId, departmentId, year, sem }) {
     if (!isCollegeEmail(email)) {
       throw new Error(getCollegeEmailErrorMessage());
+    }
+
+    // Auto-detect & link campus stream from email domain (e.g. @college.ac.in, @dsuniversity.ac.in)
+    let effectiveCollegeId = collegeId;
+    if (!effectiveCollegeId) {
+      const domain = extractDomain(email);
+      const campusInfo = inferCampusInfo(email);
+      const campus = await dataStore.getOrCreateCollegeByDomain(domain, campusInfo);
+      if (campus) {
+        effectiveCollegeId = campus.id;
+      }
     }
 
     let authUserId = null;
@@ -65,7 +76,7 @@ export const authService = {
       password,
       fullName,
       role: 'STUDENT',
-      collegeId: collegeId || null,
+      collegeId: effectiveCollegeId || null,
       departmentId: departmentId || null,
       academicYear: year ? parseInt(year, 10) : null,
       semester: sem ? parseInt(sem, 10) : null,
@@ -114,7 +125,12 @@ export const authService = {
     if (!user) {
       const localUser = await dataStore.findUserByEmail(email);
       if (!localUser) {
-        throw new Error('Invalid email or password.');
+        const notFoundErr = new Error(
+          'No account found with this email. First-time users must create an account first before logging in.'
+        );
+        notFoundErr.code = 'ACCOUNT_NOT_FOUND';
+        notFoundErr.status = 404;
+        throw notFoundErr;
       }
 
       // Verify password if password_hash is stored
