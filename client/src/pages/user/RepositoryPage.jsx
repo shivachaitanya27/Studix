@@ -16,7 +16,11 @@ import {
   FolderOpen,
   HelpCircle,
   X,
+  Building2,
+  School,
+  GraduationCap,
 } from 'lucide-react';
+import api from '../../services/api.js';
 import {
   fetchResources,
   fetchUserBookmarks,
@@ -37,6 +41,7 @@ import {
   selectSelectedSemester,
   selectSubjects,
 } from '../../redux/academicSlice.js';
+import { selectCurrentUser } from '../../redux/authSlice.js';
 import ResourceCard from '../../components/user/ResourceCard.jsx';
 import UploadModal from '../../components/user/UploadModal.jsx';
 
@@ -44,6 +49,7 @@ export const RepositoryPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  const user = useSelector(selectCurrentUser);
   const college = useSelector(selectSelectedCollege);
   const department = useSelector(selectSelectedDepartment);
   const year = useSelector(selectSelectedYear);
@@ -60,16 +66,51 @@ export const RepositoryPage = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedSemesterFilter, setSelectedSemesterFilter] = useState('');
 
-  // Initial load of repository resources for current college & branch (fetch all semesters so search works across entire archive)
+  // Cross-Department & Cross-College Filter State
+  const [selectedDeptFilter, setSelectedDeptFilter] = useState('ALL');
+  const [departmentsList, setDepartmentsList] = useState([]);
+  const [collegesList, setCollegesList] = useState([]);
+  const [selectedCollegeFilter, setSelectedCollegeFilter] = useState('ALL');
+
   useEffect(() => {
-    dispatch(
-      fetchResources({
-        collegeId: college?.id,
-        departmentId: department?.id,
+    api
+      .get('/academic/departments')
+      .catch(() => api.get('/departments'))
+      .then((res) => {
+        if (res.data?.data && Array.isArray(res.data.data)) {
+          setDepartmentsList(res.data.data);
+        }
       })
-    );
+      .catch(() => {});
+
+    api
+      .get('/academic/colleges')
+      .catch(() => api.get('/colleges'))
+      .then((res) => {
+        if (res.data?.data && Array.isArray(res.data.data)) {
+          setCollegesList(res.data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch repository resources matching active college & department filter
+  useEffect(() => {
+    const params = {};
+
+    if (selectedCollegeFilter !== 'ALL') {
+      params.collegeId = selectedCollegeFilter;
+    } else if (college?.id && user?.role !== 'ADMIN') {
+      params.collegeId = college.id;
+    }
+
+    if (selectedDeptFilter !== 'ALL') {
+      params.departmentId = selectedDeptFilter;
+    }
+
+    dispatch(fetchResources(params));
     dispatch(fetchUserBookmarks());
-  }, [dispatch, college?.id, department?.id]);
+  }, [dispatch, college?.id, selectedDeptFilter, selectedCollegeFilter, user?.role]);
 
 
   // Tab definitions
@@ -200,9 +241,17 @@ export const RepositoryPage = () => {
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1 flex flex-wrap items-center gap-2">
             <span>Filtered for:</span>
-            <span className="font-bold text-white">{college?.code || 'University'}</span>
+            <span className="font-bold text-white">
+              {selectedCollegeFilter !== 'ALL'
+                ? collegesList.find((c) => c.id === selectedCollegeFilter)?.code || 'Campus'
+                : college?.code || 'University'}
+            </span>
             <span>•</span>
-            <span className="text-brand-300 font-semibold">{department?.name || 'Department'}</span>
+            <span className="text-brand-300 font-bold">
+              {selectedDeptFilter === 'ALL'
+                ? 'All Departments'
+                : departmentsList.find((d) => d.id === selectedDeptFilter)?.name || department?.name || 'Department'}
+            </span>
             <span>•</span>
             <span className="text-amber-400 font-bold">Year {year || 1}, Sem {semester || 1}</span>
           </p>
@@ -224,6 +273,78 @@ export const RepositoryPage = () => {
             <span>Upload Document</span>
           </button>
         </div>
+      </div>
+
+      {/* Cross-Department & Cross-Campus Filter Selector Strip */}
+      <div className="p-3 sm:p-4 rounded-2xl neu-flat flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex items-center space-x-2 text-xs font-bold text-slate-300">
+          <Building2 className="w-4 h-4 text-brand-400 flex-shrink-0" />
+          <span className="uppercase tracking-wider text-[11px] text-slate-400">Department:</span>
+        </div>
+
+        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 scrollbar-none flex-1">
+          <button
+            type="button"
+            onClick={() => setSelectedDeptFilter('ALL')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+              selectedDeptFilter === 'ALL'
+                ? 'neu-pressed border border-brand-500 bg-brand-500/20 text-brand-300 shadow-sm font-black'
+                : 'neu-button text-slate-400 hover:text-white'
+            }`}
+          >
+            🌐 All Departments
+          </button>
+
+          {(departmentsList.length > 0
+            ? departmentsList
+            : [
+                { id: 'd1000000-0000-0000-0000-000000000001', code: 'CSE', name: 'Computer Science' },
+                { id: 'd1000000-0000-0000-0000-000000000005', code: 'AI-DS', name: 'AI & Data Science' },
+                { id: 'd1000000-0000-0000-0000-000000000006', code: 'AIML', name: 'AI & Machine Learning' },
+                { id: 'd1000000-0000-0000-0000-000000000007', code: 'CYB', name: 'Cybersecurity' },
+                { id: 'd1000000-0000-0000-0000-000000000002', code: 'ECE', name: 'Electronics & Communication' },
+                { id: 'd1000000-0000-0000-0000-000000000003', code: 'EEE', name: 'Electrical & Electronics' },
+                { id: 'd1000000-0000-0000-0000-000000000004', code: 'IT', name: 'Information Technology' },
+                { id: 'd1000000-0000-0000-0000-000000000008', code: 'IOT', name: 'Internet of Things' },
+              ]
+          ).map((dept) => {
+            const isSelected = selectedDeptFilter === dept.id;
+            return (
+              <button
+                key={dept.id}
+                type="button"
+                onClick={() => setSelectedDeptFilter(dept.id)}
+                title={dept.name}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  isSelected
+                    ? 'neu-pressed border border-accent-cyan bg-cyan-500/20 text-cyan-300 font-black shadow-sm'
+                    : 'neu-button text-slate-400 hover:text-white'
+                }`}
+              >
+                {dept.code}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Multi-College Selector for Admins */}
+        {user?.role === 'ADMIN' && collegesList.length > 0 && (
+          <div className="flex items-center space-x-2 shrink-0 border-t md:border-t-0 md:border-l border-slate-700/50 pt-2 md:pt-0 md:pl-3">
+            <School className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+            <select
+              value={selectedCollegeFilter}
+              onChange={(e) => setSelectedCollegeFilter(e.target.value)}
+              className="px-2.5 py-1.5 rounded-xl neu-pressed text-xs text-slate-200 focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">🏫 All Campuses</option>
+              {collegesList.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.code || c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Tactile Neumorphic Category Tabs */}

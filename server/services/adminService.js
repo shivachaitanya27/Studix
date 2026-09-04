@@ -312,8 +312,49 @@ export const adminService = {
 
     return updated || resource;
   },
+
+  /**
+   * Get all registered scholars / users across all departments & colleges
+   */
+  async getAllUsers(filters = {}) {
+    return dataStore.getAllUsers(filters);
+  },
+
+  /**
+   * Admin updates a user's academic stream (College, Department, Year, Semester)
+   */
+  async updateUserStream(userId, { collegeId, departmentId, academicYear, semester }, adminUserId) {
+    const user = await dataStore.findUserById(userId);
+    if (!user) {
+      const err = new Error('User not found.');
+      err.status = 404;
+      throw err;
+    }
+
+    const updates = {};
+    if (collegeId) updates.college_id = collegeId;
+    if (departmentId) updates.department_id = departmentId;
+    if (academicYear) updates.academic_year = parseInt(academicYear, 10);
+    if (semester) updates.semester = parseInt(semester, 10);
+
+    const updated = await dataStore.updateUser(userId, updates);
+
+    aiAuditLogs.unshift({
+      id: `log-usr-stream-${Date.now()}`,
+      filename: `User: ${user.full_name || user.email}`,
+      resourceType: 'USER_STREAM_MODIFIED',
+      rejectedBy: 'ADMIN_USER_STREAM_EDIT',
+      reason: `Assigned Dept: ${departmentId || user.department_id}, Year: ${academicYear || user.academic_year}, Sem: ${semester || user.semester}`,
+      timestamp: new Date().toISOString(),
+      action: 'USER_STREAM_UPDATED',
+      adminId: adminUserId,
+    });
+
+    return updated;
+  },
 };
 
 export default adminService;
+
 
 

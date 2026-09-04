@@ -315,30 +315,102 @@ export const initialSubjects = [
   }
 ];
 
-// Pre-seeded demo users (password: Studix@2026)
+// Pre-seeded verified scholars across all departments (password: Studix@2026)
 export const initialUsers = [
   {
     id: 'u1000000-0000-0000-0000-000000000001',
-    email: 'student@studix.edu',
-    password_hash: '$2a$10$wT0X1L3U8E4T9p0R7s9vU.w2k8q6ZzY1tZ5R0a1B2c3D4e5F6g7H.', // Studix@2026
-    full_name: 'Alex Rivera',
-    role: 'STUDENT',
+    email: 'vshivachaitanya7@gmail.com',
+    password_hash: '$2a$10$wT0X1L3U8E4T9p0R7s9vU.w2k8q6ZzY1tZ5R0a1B2c3D4e5F6g7H.',
+    full_name: 'Shiva Chaitanya',
+    role: 'ADMIN',
     college_id: 'c1000000-0000-0000-0000-000000000001',
     department_id: 'd1000000-0000-0000-0000-000000000001',
+    academic_year: 3,
+    semester: 6,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'u1000000-0000-0000-0000-000000000002',
+    email: 'aids.scholar@dsuniversity.ac.in',
+    password_hash: '$2a$10$wT0X1L3U8E4T9p0R7s9vU.w2k8q6ZzY1tZ5R0a1B2c3D4e5F6g7H.',
+    full_name: 'Priya Sharma',
+    role: 'STUDENT',
+    college_id: 'c1000000-0000-0000-0000-000000000001',
+    department_id: 'd1000000-0000-0000-0000-000000000005', // AI-DS
     academic_year: 3,
     semester: 5,
     created_at: new Date().toISOString()
   },
   {
-    id: 'u1000000-0000-0000-0000-000000000002',
-    email: 'admin@studix.edu',
-    password_hash: '$2a$10$wT0X1L3U8E4T9p0R7s9vU.w2k8q6ZzY1tZ5R0a1B2c3D4e5F6g7H.', // Studix@2026
-    full_name: 'Prof. Sarah Jenkins',
-    role: 'ADMIN',
+    id: 'u1000000-0000-0000-0000-000000000003',
+    email: 'ece.scholar@dsuniversity.ac.in',
+    password_hash: '$2a$10$wT0X1L3U8E4T9p0R7s9vU.w2k8q6ZzY1tZ5R0a1B2c3D4e5F6g7H.',
+    full_name: 'Rahul Varma',
+    role: 'STUDENT',
     college_id: 'c1000000-0000-0000-0000-000000000001',
-    department_id: 'd1000000-0000-0000-0000-000000000001',
-    academic_year: null,
-    semester: null,
+    department_id: 'd1000000-0000-0000-0000-000000000002', // ECE
+    academic_year: 2,
+    semester: 4,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'u1000000-0000-0000-0000-000000000004',
+    email: 'eee.scholar@dsuniversity.ac.in',
+    password_hash: '$2a$10$wT0X1L3U8E4T9p0R7s9vU.w2k8q6ZzY1tZ5R0a1B2c3D4e5F6g7H.',
+    full_name: 'Ananya Rao',
+    role: 'STUDENT',
+    college_id: 'c1000000-0000-0000-0000-000000000001',
+    department_id: 'd1000000-0000-0000-0000-000000000003', // EEE
+    academic_year: 3,
+    semester: 6,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'u1000000-0000-0000-0000-000000000005',
+    email: 'cyb.scholar@dsuniversity.ac.in',
+    password_hash: '$2a$10$wT0X1L3U8E4T9p0R7s9vU.w2k8q6ZzY1tZ5R0a1B2c3D4e5F6g7H.',
+    full_name: 'Karthik Nair',
+    role: 'STUDENT',
+    college_id: 'c1000000-0000-0000-0000-000000000001',
+    department_id: 'd1000000-0000-0000-0000-000000000007', // CYB
+    academic_year: 4,
+    semester: 7,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'u1000000-0000-0000-0000-000000000006',
+    email: 'aiml.scholar@dsuniversity.ac.in',
+    password_hash: '$2a$10$wT0X1L3U8E4T9p0R7s9vU.w2k8q6ZzY1tZ5R0a1B2c3D4e5F6g7H.',
+    full_name: 'Sneha Reddy',
+    role: 'STUDENT',
+    college_id: 'c1000000-0000-0000-0000-000000000001',
+    department_id: 'd1000000-0000-0000-0000-000000000006', // AIML
+    academic_year: 2,
+    semester: 3,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'u1000000-0000-0000-0000-000000000007',
+    email: 'it.scholar@dsuniversity.ac.in',
+    password_hash: '$2a$10$wT0X1L3U8E4T9p0R7s9vU.w2k8q6ZzY1tZ5R0a1B2c3D4e5F6g7H.',
+    full_name: 'Vikram Joshi',
+    role: 'STUDENT',
+    college_id: 'c1000000-0000-0000-0000-000000000001',
+    department_id: 'd1000000-0000-0000-0000-000000000004', // IT
+    academic_year: 3,
+    semester: 5,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'u1000000-0000-0000-0000-000000000008',
+    email: 'iot.scholar@dsuniversity.ac.in',
+    password_hash: '$2a$10$wT0X1L3U8E4T9p0R7s9vU.w2k8q6ZzY1tZ5R0a1B2c3D4e5F6g7H.',
+    full_name: 'Meera Iyer',
+    role: 'STUDENT',
+    college_id: 'c1000000-0000-0000-0000-000000000001',
+    department_id: 'd1000000-0000-0000-0000-000000000008', // IOT
+    academic_year: 1,
+    semester: 2,
     created_at: new Date().toISOString()
   }
 ];

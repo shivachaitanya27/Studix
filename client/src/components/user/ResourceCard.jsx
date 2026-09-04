@@ -146,10 +146,18 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
             )}
           </div>
 
-          <div className="flex items-center space-x-2 text-[11px] text-slate-500">
+          <div className="flex items-center space-x-2 text-[11px] text-slate-500 flex-wrap gap-y-1">
             <span>Year {resource.year || 1}</span>
             <span>•</span>
-            <span>Semester {resource.semester || 1}</span>
+            <span>Sem {resource.semester || 1}</span>
+            {resource.department?.code && (
+              <>
+                <span>•</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold neu-pressed text-cyan-300 border border-cyan-500/20">
+                  {resource.department.code}
+                </span>
+              </>
+            )}
             {resource.college?.code && (
               <>
                 <span>•</span>

@@ -225,10 +225,6 @@ export const authService = {
 
   // Update profile
   async updateProfile(userId, updates) {
-    const existing = await dataStore.findUserById(userId);
-    if (existing?.role === 'STUDENT' && updates.college_id && existing.college_id && existing.college_id !== updates.college_id) {
-      delete updates.college_id; // Disallow changing enrolled college
-    }
     const updated = await dataStore.updateUser(userId, updates);
     return authService.getUserProfile(updated.id);
   },

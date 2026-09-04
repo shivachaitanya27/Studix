@@ -31,6 +31,8 @@ import {
   Sun,
   Globe,
   Check,
+  Building2,
+  School,
 } from 'lucide-react';
 import { logout, selectCurrentUser, uploadUserAvatar } from '../../redux/authSlice.js';
 import { resetAiState } from '../../redux/aiSlice.js';
@@ -387,7 +389,37 @@ export const Navbar = () => {
                     )}
                   </div>
 
-                  {/* Change Academic Stream & Semester Progression */}
+                  {/* Change Academic Stream, Department & College Controls */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        setSettingsInitialTab('stream');
+                        setIsSettingsOpen(true);
+                      }}
+                      id="profile-dropdown-dept-btn"
+                      className="py-2 px-2.5 rounded-xl neu-button text-[11px] font-bold text-brand-600 dark:text-brand-300 hover:text-white flex items-center justify-center space-x-1 border border-brand-500/30 transition-all bg-brand-500/5 hover:bg-brand-500/15 cursor-pointer"
+                    >
+                      <Building2 className="w-3 h-3 text-brand-400" />
+                      <span>Change Dept</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        setSettingsInitialTab('stream');
+                        setIsSettingsOpen(true);
+                      }}
+                      id="profile-dropdown-college-btn"
+                      className="py-2 px-2.5 rounded-xl neu-button text-[11px] font-bold text-accent-cyan hover:text-white flex items-center justify-center space-x-1 border border-accent-cyan/30 transition-all bg-cyan-500/5 hover:bg-cyan-500/15 cursor-pointer"
+                    >
+                      <School className="w-3 h-3 text-accent-cyan" />
+                      <span>Change College</span>
+                    </button>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -396,10 +428,10 @@ export const Navbar = () => {
                       setIsSettingsOpen(true);
                     }}
                     id="profile-dropdown-stream-btn"
-                    className="w-full py-2 px-3 rounded-xl neu-button text-xs font-bold text-amber-500 dark:text-amber-300 hover:text-white flex items-center justify-center space-x-2 border border-amber-500/40 transition-all bg-amber-500/5 hover:bg-amber-500/15"
+                    className="w-full py-2 px-3 rounded-xl neu-button text-xs font-bold text-amber-500 dark:text-amber-300 hover:text-white flex items-center justify-center space-x-2 border border-amber-500/40 transition-all bg-amber-500/5 hover:bg-amber-500/15 cursor-pointer"
                   >
                     <GraduationCap className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Change Semester & Year</span>
+                    <span>Change Stream (Year & Sem)</span>
                   </button>
 
                   {/* Profile Action: Change Photo */}
@@ -552,8 +584,8 @@ export const Navbar = () => {
                 </div>
               </div>
 
-              {/* Academic Stream & Change Semester Card */}
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 space-y-2 text-xs">
+              {/* Academic Stream & Campus Controls Card (Change Department, College, Stream) */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 space-y-2.5 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Campus Stream</span>
                   <span className="text-[10px] font-bold text-accent-emerald flex items-center gap-1">
@@ -561,12 +593,15 @@ export const Navbar = () => {
                     Enrolled
                   </span>
                 </div>
-                <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                  {college?.name || college?.code || 'University'}
-                </p>
-                <p className="text-[11px] text-brand-600 dark:text-brand-400 font-semibold truncate">
-                  {department?.name || department?.code || 'Academic Branch'}
-                </p>
+                <div>
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                    {college?.name || college?.code || 'University'}
+                  </p>
+                  <p className="text-[11px] text-brand-600 dark:text-brand-400 font-semibold truncate mt-0.5">
+                    {department?.name || department?.code || 'Academic Branch'}
+                  </p>
+                </div>
+
                 <div className="flex items-center justify-between pt-1">
                   <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                     Year {year || 1} • Sem {semester || 1}
@@ -578,10 +613,42 @@ export const Navbar = () => {
                       setSettingsInitialTab('stream');
                       setIsSettingsOpen(true);
                     }}
+                    id="mobile-drawer-change-stream-btn"
                     className="px-2.5 py-1 rounded-lg neu-button text-[10px] font-bold text-amber-600 dark:text-amber-300 flex items-center space-x-1 border border-amber-500/30 hover:bg-amber-500/10 cursor-pointer"
                   >
                     <Pencil className="w-2.5 h-2.5" />
-                    <span>Change Semester</span>
+                    <span>Change Stream</span>
+                  </button>
+                </div>
+
+                {/* Quick Action Options: Change Department & Change College */}
+                <div className="grid grid-cols-2 gap-1.5 pt-1.5 border-t border-slate-200 dark:border-slate-700/60">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileDrawerOpen(false);
+                      setSettingsInitialTab('stream');
+                      setIsSettingsOpen(true);
+                    }}
+                    id="mobile-drawer-change-dept-btn"
+                    className="px-2 py-1.5 rounded-xl neu-button text-[10px] font-bold text-brand-600 dark:text-brand-300 hover:text-brand-700 dark:hover:text-white flex items-center justify-center space-x-1 border border-brand-500/30 hover:bg-brand-500/10 cursor-pointer"
+                  >
+                    <Building2 className="w-3 h-3 text-brand-500 flex-shrink-0" />
+                    <span className="truncate">Change Dept</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileDrawerOpen(false);
+                      setSettingsInitialTab('stream');
+                      setIsSettingsOpen(true);
+                    }}
+                    id="mobile-drawer-change-college-btn"
+                    className="px-2 py-1.5 rounded-xl neu-button text-[10px] font-bold text-accent-cyan hover:text-cyan-600 dark:hover:text-white flex items-center justify-center space-x-1 border border-accent-cyan/30 hover:bg-accent-cyan/10 cursor-pointer"
+                  >
+                    <School className="w-3 h-3 text-accent-cyan flex-shrink-0" />
+                    <span className="truncate">Change College</span>
                   </button>
                 </div>
               </div>

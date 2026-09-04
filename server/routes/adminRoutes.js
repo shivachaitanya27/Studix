@@ -25,4 +25,8 @@ router.get('/moderation/logs', adminController.getAiLogs);
 // Real-time Platform Analytics
 router.get('/analytics', adminController.getAnalytics);
 
+// User & Scholar Management across all departments
+router.get('/users', adminController.getUsers);
+router.patch('/users/:id/stream', adminController.updateUserStream);
+
 export default router;

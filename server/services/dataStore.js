@@ -74,8 +74,13 @@ class MemoryStore {
   }
 
   async getDepartments(collegeId) {
-    if (!collegeId) return this.departments;
-    return this.departments.filter((d) => d.college_id === collegeId);
+    if (!collegeId || collegeId === 'ALL') return this.departments;
+    const filtered = this.departments.filter((d) => d.college_id === collegeId);
+    if (filtered.length > 0) return filtered;
+    return this.departments.map((d) => ({
+      ...d,
+      college_id: collegeId,
+    }));
   }
 
   async getDepartmentById(id) {
@@ -109,7 +114,6 @@ class MemoryStore {
     return newSubject;
   }
 
-
   findUserByEmail(email) {
     if (!email) return null;
     const targetEmail = email.toLowerCase().trim();
@@ -123,6 +127,54 @@ class MemoryStore {
     return this.users.find((u) => u.id === id) || null;
   }
 
+  async getAllUsers({ collegeId, departmentId, search } = {}) {
+    let list = [...this.users];
+    try {
+      const { isSupabaseConfigured, supabaseAdmin } = await import('../config/supabase.js');
+      if (isSupabaseConfigured && supabaseAdmin) {
+        const { data, error } = await supabaseAdmin
+          .from('users')
+          .select('id, email, full_name, role, college_id, department_id, academic_year, semester, created_at, avatar_url');
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const map = new Map();
+          for (const u of list) map.set((u.email || '').toLowerCase(), u);
+          for (const u of data) map.set((u.email || '').toLowerCase(), { ...map.get((u.email || '').toLowerCase()), ...u });
+          list = Array.from(map.values());
+        }
+      }
+    } catch (e) {
+      console.warn('getAllUsers notice:', e.message);
+    }
+
+    let enriched = list.map((u) => {
+      const college = this.colleges.find((c) => c.id === u.college_id);
+      const department = this.departments.find((d) => d.id === u.department_id);
+      const { password_hash, ...safe } = u;
+      return {
+        ...safe,
+        college: college ? { id: college.id, name: college.name, code: college.code } : null,
+        department: department ? { id: department.id, name: department.name, code: department.code } : null,
+      };
+    });
+
+    if (collegeId && collegeId !== 'ALL') {
+      enriched = enriched.filter((u) => u.college_id === collegeId);
+    }
+    if (departmentId && departmentId !== 'ALL') {
+      enriched = enriched.filter((u) => u.department_id === departmentId);
+    }
+    if (search && search.trim()) {
+      const q = search.toLowerCase().trim();
+      enriched = enriched.filter((u) =>
+        (u.full_name || '').toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q) ||
+        (u.department?.name || '').toLowerCase().includes(q) ||
+        (u.department?.code || '').toLowerCase().includes(q)
+      );
+    }
+
+    return enriched;
+  }
 
   async createUser(userData) {
     const existing = await this.findUserByEmail(userData.email);
@@ -162,7 +214,6 @@ class MemoryStore {
     return this.users[idx];
   }
 
-
   // --- Phase 2: Resources & Bookmarks ---
   async findResourceByHash(fileHash) {
     return this.resources.find((r) => r.file_hash === fileHash) || null;
@@ -177,10 +228,14 @@ class MemoryStore {
   enrichResource(r) {
     const subject = this.subjects.find((s) => s.id === r.subject_id);
     const uploader = this.users.find((u) => u.id === r.uploaded_by);
+    const college = this.colleges.find((c) => c.id === r.college_id);
+    const department = this.departments.find((d) => d.id === r.department_id);
     return {
       ...r,
       subject: subject ? { id: subject.id, name: subject.name, code: subject.code } : null,
-      uploader: uploader ? { id: uploader.id, full_name: uploader.full_name } : null,
+      uploader: uploader ? { id: uploader.id, full_name: uploader.full_name, email: uploader.email } : null,
+      college: college ? { id: college.id, name: college.name, code: college.code } : null,
+      department: department ? { id: department.id, name: department.name, code: department.code } : null,
     };
   }
 

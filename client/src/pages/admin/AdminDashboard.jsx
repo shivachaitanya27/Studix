@@ -31,6 +31,8 @@ import {
   GraduationCap,
   Edit3,
   SlidersHorizontal,
+  Users,
+  School,
 } from 'lucide-react';
 import api from '../../services/api.js';
 import { selectCurrentUser } from '../../redux/authSlice.js';
@@ -39,7 +41,7 @@ export const AdminDashboard = () => {
   const navigate = useNavigate();
   const user = useSelector(selectCurrentUser);
 
-  const [activeTab, setActiveTab] = useState('queue'); // 'queue' | 'analytics' | 'logs' | 'all'
+  const [activeTab, setActiveTab] = useState('queue'); // 'queue' | 'users' | 'analytics' | 'logs' | 'all'
   const [queue, setQueue] = useState([]);
   const [logs, setLogs] = useState([]);
   const [allResources, setAllResources] = useState([]);
@@ -55,6 +57,20 @@ export const AdminDashboard = () => {
   const [selectedAdminSemester, setSelectedAdminSemester] = useState('ALL');
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
   const [adminStatusFilter, setAdminStatusFilter] = useState('ALL');
+
+  // Campus Scholars & Users Governance State across all departments
+  const [usersList, setUsersList] = useState([]);
+  const [selectedUserDept, setSelectedUserDept] = useState('ALL');
+  const [selectedUserCollege, setSelectedUserCollege] = useState('ALL');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [editingUser, setEditingUser] = useState(null);
+  const [userStreamForm, setUserStreamForm] = useState({
+    collegeId: '',
+    departmentId: '',
+    academicYear: '1',
+    semester: '1',
+  });
+  const [isSavingUserStream, setIsSavingUserStream] = useState(false);
 
   // Bulk Clean / Purge Selection State
   const [selectedResourceIds, setSelectedResourceIds] = useState(new Set());
@@ -94,13 +110,14 @@ export const AdminDashboard = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [queueRes, logsRes, analyticsRes, allRes, collegesRes, deptsRes] = await Promise.all([
+      const [queueRes, logsRes, analyticsRes, allRes, collegesRes, deptsRes, usersRes] = await Promise.all([
         api.get('/admin/moderation/queue'),
         api.get('/admin/moderation/logs'),
         api.get('/admin/analytics'),
         api.get('/resources?status=ALL'),
-        api.get('/colleges').catch(() => ({ data: { data: [] } })),
-        api.get('/departments').catch(() => ({ data: { data: [] } })),
+        api.get('/academic/colleges').catch(() => api.get('/colleges')).catch(() => ({ data: { data: [] } })),
+        api.get('/academic/departments').catch(() => api.get('/departments')).catch(() => ({ data: { data: [] } })),
+        api.get('/admin/users').catch(() => ({ data: { data: [] } })),
       ]);
       setQueue(queueRes.data.data || []);
       setLogs(logsRes.data.data || []);
@@ -108,6 +125,7 @@ export const AdminDashboard = () => {
       setAllResources(allRes.data.data || []);
       setColleges(collegesRes.data.data || []);
       setDepartments(deptsRes.data.data || []);
+      setUsersList(usersRes.data.data || []);
     } catch (err) {
       console.error('Failed to load admin data:', err);
     } finally {
@@ -118,6 +136,28 @@ export const AdminDashboard = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleSaveUserStream = async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setIsSavingUserStream(true);
+    try {
+      await api.patch(`/admin/users/${editingUser.id}/stream`, {
+        collegeId: userStreamForm.collegeId,
+        departmentId: userStreamForm.departmentId,
+        academicYear: parseInt(userStreamForm.academicYear, 10),
+        semester: parseInt(userStreamForm.semester, 10),
+      });
+      setActionSuccess(`Academic stream for ${editingUser.full_name || editingUser.email} updated successfully.`);
+      setEditingUser(null);
+      fetchData();
+      setTimeout(() => setActionSuccess(''), 3500);
+    } catch (err) {
+      alert('Failed to update user stream: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSavingUserStream(false);
+    }
+  };
 
   const handleApprove = async (id) => {
     try {
@@ -327,6 +367,22 @@ export const AdminDashboard = () => {
         </button>
 
         <button
+          onClick={() => setActiveTab('users')}
+          id="admin-tab-users"
+          className={`px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center space-x-2 transition-all ${
+            activeTab === 'users'
+              ? 'neu-tab-active text-white'
+              : 'neu-button text-slate-400 hover:text-white'
+          }`}
+        >
+          <Users className="w-4 h-4 text-emerald-400" />
+          <span>Campus Scholars & Users</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] neu-pressed text-emerald-300 font-black">
+            {usersList.length}
+          </span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('analytics')}
           id="admin-tab-analytics"
           className={`px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center space-x-2 transition-all ${
@@ -449,6 +505,245 @@ export const AdminDashboard = () => {
         </div>
       )}
 
+      {/* TAB: Registered Campus Scholars & Users across ALL Departments */}
+      {activeTab === 'users' && (() => {
+        const filteredUsers = usersList.filter((u) => {
+          if (selectedUserCollege !== 'ALL' && u.college_id !== selectedUserCollege) {
+            return false;
+          }
+          if (selectedUserDept !== 'ALL') {
+            const userDeptId = u.department_id || u.department?.id;
+            const matchDept = departments.find((d) => d.code === selectedUserDept || d.id === selectedUserDept);
+            const targetId = matchDept ? matchDept.id : selectedUserDept;
+            if (userDeptId !== targetId && u.department?.code !== selectedUserDept) {
+              return false;
+            }
+          }
+          if (!userSearchQuery.trim()) return true;
+          const q = userSearchQuery.toLowerCase();
+          return (
+            (u.full_name || '').toLowerCase().includes(q) ||
+            (u.email || '').toLowerCase().includes(q) ||
+            (u.department?.name || u.department?.code || '').toLowerCase().includes(q) ||
+            (u.college?.name || u.college?.code || '').toLowerCase().includes(q)
+          );
+        });
+
+        return (
+          <div className="space-y-4 animate-fade-in">
+            {/* Header & Stats Banner */}
+            <div className="p-4 rounded-2xl neu-flat text-xs text-slate-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <span className="flex items-center space-x-2">
+                <Users className="w-4 h-4 text-emerald-400" />
+                <span>Enrolled Campus Scholars & Users across AIDS, ECE, EEE, CYB, AIML, IT, IOT, and CSE</span>
+              </span>
+              <span className="font-bold text-emerald-400">
+                {filteredUsers.length} of {usersList.length} Scholars Displayed
+              </span>
+            </div>
+
+            {/* Filter Toolbar */}
+            <div className="p-4 rounded-2xl neu-flat grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Search */}
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  value={userSearchQuery}
+                  onChange={(e) => setUserSearchQuery(e.target.value)}
+                  placeholder="Search user by name, email, or branch..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+                />
+              </div>
+
+              {/* College Filter */}
+              <div>
+                <select
+                  value={selectedUserCollege}
+                  onChange={(e) => setSelectedUserCollege(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl neu-pressed text-xs text-slate-200 focus:outline-none cursor-pointer"
+                >
+                  <option value="ALL">🏫 All Colleges & Campuses</option>
+                  {colleges.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Department Filter */}
+              <div>
+                <select
+                  value={selectedUserDept}
+                  onChange={(e) => setSelectedUserDept(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl neu-pressed text-xs text-slate-200 focus:outline-none cursor-pointer"
+                >
+                  <option value="ALL">🏛️ All Departments (AIDS, ECE, EEE, CYB...)</option>
+                  {(departments.length > 0
+                    ? departments
+                    : [
+                        { id: 'd1000000-0000-0000-0000-000000000001', code: 'CSE', name: 'Computer Science and Engineering' },
+                        { id: 'd1000000-0000-0000-0000-000000000005', code: 'AI-DS', name: 'Artificial Intelligence & Data Science' },
+                        { id: 'd1000000-0000-0000-0000-000000000006', code: 'AIML', name: 'Artificial Intelligence & Machine Learning' },
+                        { id: 'd1000000-0000-0000-0000-000000000007', code: 'CYB', name: 'Cybersecurity' },
+                        { id: 'd1000000-0000-0000-0000-000000000002', code: 'ECE', name: 'Electronics and Communication Engineering' },
+                        { id: 'd1000000-0000-0000-0000-000000000003', code: 'EEE', name: 'Electrical and Electronics Engineering' },
+                        { id: 'd1000000-0000-0000-0000-000000000004', code: 'IT', name: 'Information Technology' },
+                        { id: 'd1000000-0000-0000-0000-000000000008', code: 'IOT', name: 'Internet of Things' },
+                      ]
+                  ).map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.code} - {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Department Quick Chips */}
+            <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 scrollbar-none">
+              <button
+                type="button"
+                onClick={() => setSelectedUserDept('ALL')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  selectedUserDept === 'ALL'
+                    ? 'neu-pressed border border-emerald-500 bg-emerald-500/20 text-emerald-300 font-black'
+                    : 'neu-button text-slate-400 hover:text-white'
+                }`}
+              >
+                All Departments
+              </button>
+              {['AI-DS', 'AIML', 'CSE', 'CYB', 'ECE', 'EEE', 'IT', 'IOT'].map((code) => {
+                const matchDept = departments.find((d) => d.code === code);
+                const isSelected =
+                  selectedUserDept === code || (matchDept && selectedUserDept === matchDept.id);
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => {
+                      if (matchDept) setSelectedUserDept(matchDept.id);
+                      else setSelectedUserDept(code);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      isSelected
+                        ? 'neu-pressed border border-brand-500 bg-brand-500/20 text-brand-300 font-black'
+                        : 'neu-button text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {code}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* User List Grid */}
+            {filteredUsers.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredUsers.map((u) => {
+                  const deptCode = u.department?.code || 'GEN';
+                  const deptColor =
+                    deptCode === 'AI-DS' || deptCode === 'AIML'
+                      ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+                      : deptCode === 'CYB'
+                      ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                      : deptCode === 'ECE' || deptCode === 'EEE'
+                      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                      : deptCode === 'IT' || deptCode === 'IOT'
+                      ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                      : 'bg-brand-500/15 text-brand-300 border-brand-500/30';
+
+                  return (
+                    <div
+                      key={u.id}
+                      className="p-5 rounded-3xl neu-flat flex flex-col justify-between space-y-4 relative overflow-hidden group hover:border-brand-500/40 transition-all"
+                    >
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${deptColor}`}
+                          >
+                            {deptCode}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${
+                              u.role === 'ADMIN'
+                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                : 'bg-slate-700/50 text-slate-300'
+                            }`}
+                          >
+                            {u.role}
+                          </span>
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-bold text-white group-hover:text-brand-300 transition-colors truncate">
+                            {u.full_name || 'Campus Scholar'}
+                          </h4>
+                          <p className="text-[11px] text-slate-400 truncate">{u.email}</p>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl neu-pressed text-[11px] space-y-1">
+                          <div className="flex items-center justify-between text-slate-400">
+                            <span>Campus:</span>
+                            <span className="font-semibold text-slate-200 truncate max-w-[150px]">
+                              {u.college?.name || u.college?.code || 'University'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-slate-400">
+                            <span>Branch:</span>
+                            <span className="font-semibold text-brand-300 truncate max-w-[150px]">
+                              {u.department?.name || u.department?.code || 'Engineering'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-slate-400">
+                            <span>Active Stream:</span>
+                            <span className="font-bold text-amber-400">
+                              Year {u.academic_year || 1} • Sem {u.semester || 1}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-700/40 flex items-center justify-between">
+                        <span className="text-[10px] text-slate-500">
+                          Joined {new Date(u.created_at || Date.now()).toLocaleDateString()}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingUser(u);
+                            setUserStreamForm({
+                              collegeId: u.college_id || colleges[0]?.id || '',
+                              departmentId: u.department_id || departments[0]?.id || '',
+                              academicYear: String(u.academic_year || 1),
+                              semester: String(u.semester || 1),
+                            });
+                          }}
+                          className="px-3 py-1.5 rounded-xl neu-button text-xs font-bold text-brand-300 hover:text-white flex items-center space-x-1.5 border border-brand-500/30 cursor-pointer"
+                        >
+                          <Edit3 className="w-3 h-3 text-brand-400" />
+                          <span>Edit Stream</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-12 rounded-3xl neu-pressed text-center space-y-2">
+                <Users className="w-10 h-10 text-slate-500 mx-auto" />
+                <h3 className="text-base font-bold text-white">No Scholars Found</h3>
+                <p className="text-xs text-slate-400">
+                  No registered users match the selected department or college filter.
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* TAB 2: Live Platform Analytics */}
       {activeTab === 'analytics' && analytics && (
         <div className="space-y-6 animate-fade-in">
@@ -553,10 +848,19 @@ export const AdminDashboard = () => {
 
       {/* TAB 4: All Resources & Multi-Campus Unwanted File Cleaner */}
       {activeTab === 'all' && (() => {
-        const availableDepartments = departments.filter((d) => {
-          if (selectedAdminCollege === 'ALL') return true;
-          return d.college_id === selectedAdminCollege;
-        });
+        const availableDepartments =
+          departments.length > 0
+            ? departments
+            : [
+                { id: 'd1000000-0000-0000-0000-000000000001', code: 'CSE', name: 'Computer Science and Engineering' },
+                { id: 'd1000000-0000-0000-0000-000000000005', code: 'AI-DS', name: 'Artificial Intelligence and Data Science' },
+                { id: 'd1000000-0000-0000-0000-000000000006', code: 'AIML', name: 'Artificial Intelligence and Machine Learning' },
+                { id: 'd1000000-0000-0000-0000-000000000007', code: 'CYB', name: 'Cybersecurity' },
+                { id: 'd1000000-0000-0000-0000-000000000002', code: 'ECE', name: 'Electronics and Communication Engineering' },
+                { id: 'd1000000-0000-0000-0000-000000000003', code: 'EEE', name: 'Electrical and Electronics Engineering' },
+                { id: 'd1000000-0000-0000-0000-000000000004', code: 'IT', name: 'Information Technology' },
+                { id: 'd1000000-0000-0000-0000-000000000008', code: 'IOT', name: 'Internet of Things' },
+              ];
 
         const filteredCatalog = allResources.filter((item) => {
           // 1. College filter
@@ -1164,6 +1468,130 @@ export const AdminDashboard = () => {
                   className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-extrabold shadow-glow flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 transition-all"
                 >
                   <span>{isSavingStream ? 'Saving...' : 'Save Stream Changes'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Stream Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-lg neu-flat rounded-3xl p-6 space-y-4 border border-brand-500/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <GraduationCap className="w-5 h-5 text-brand-400" />
+                <h3 className="text-sm font-bold text-white">
+                  Assign User Stream: {editingUser.full_name || editingUser.email}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingUser(null)}
+                className="p-1.5 rounded-xl neu-button text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveUserStream} className="space-y-3.5">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  Enrolled College / Campus
+                </label>
+                <select
+                  value={userStreamForm.collegeId}
+                  onChange={(e) => setUserStreamForm((prev) => ({ ...prev, collegeId: e.target.value }))}
+                  className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 focus:outline-none"
+                >
+                  {colleges.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  Department / Branch
+                </label>
+                <select
+                  value={userStreamForm.departmentId}
+                  onChange={(e) => setUserStreamForm((prev) => ({ ...prev, departmentId: e.target.value }))}
+                  className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 focus:outline-none"
+                >
+                  {(departments.length > 0
+                    ? departments
+                    : [
+                        { id: 'd1000000-0000-0000-0000-000000000001', code: 'CSE', name: 'Computer Science and Engineering' },
+                        { id: 'd1000000-0000-0000-0000-000000000005', code: 'AI-DS', name: 'Artificial Intelligence & Data Science' },
+                        { id: 'd1000000-0000-0000-0000-000000000006', code: 'AIML', name: 'Artificial Intelligence & Machine Learning' },
+                        { id: 'd1000000-0000-0000-0000-000000000007', code: 'CYB', name: 'Cybersecurity' },
+                        { id: 'd1000000-0000-0000-0000-000000000002', code: 'ECE', name: 'Electronics and Communication Engineering' },
+                        { id: 'd1000000-0000-0000-0000-000000000003', code: 'EEE', name: 'Electrical and Electronics Engineering' },
+                        { id: 'd1000000-0000-0000-0000-000000000004', code: 'IT', name: 'Information Technology' },
+                        { id: 'd1000000-0000-0000-0000-000000000008', code: 'IOT', name: 'Internet of Things' },
+                      ]
+                  ).map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.code} - {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Academic Year
+                  </label>
+                  <select
+                    value={userStreamForm.academicYear}
+                    onChange={(e) => setUserStreamForm((prev) => ({ ...prev, academicYear: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 focus:outline-none"
+                  >
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Semester
+                  </label>
+                  <select
+                    value={userStreamForm.semester}
+                    onChange={(e) => setUserStreamForm((prev) => ({ ...prev, semester: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-100 focus:outline-none"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                      <option key={s} value={s}>
+                        Semester {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-2">
+                <button
+                  type="button"
+                  disabled={isSavingUserStream}
+                  onClick={() => setEditingUser(null)}
+                  className="px-4 py-2 rounded-xl neu-button text-xs font-semibold text-slate-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingUserStream}
+                  className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-extrabold shadow-glow flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 transition-all"
+                >
+                  <span>{isSavingUserStream ? 'Saving...' : 'Update Scholar Stream'}</span>
                 </button>
               </div>
             </form>

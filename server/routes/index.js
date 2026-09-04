@@ -16,6 +16,13 @@ router.get('/health', (req, res) => {
   });
 });
 
+import { academicController } from '../controllers/academicController.js';
+
+// Direct aliases for academic entities
+router.get('/colleges', academicController.getColleges);
+router.get('/departments', academicController.getDepartments);
+router.get('/departments/:collegeId', academicController.getDepartments);
+
 // Modular Routes
 router.use('/auth', authRoutes);
 router.use('/academic', academicRoutes);
@@ -24,6 +31,7 @@ router.use('/ai', aiRoutes);
 router.use('/admin', adminRoutes);
 
 export default router;
+
 
 
 

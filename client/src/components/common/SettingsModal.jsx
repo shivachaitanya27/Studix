@@ -22,6 +22,9 @@ import {
   Layers,
   BookOpen,
   Check,
+  Building2,
+  School,
+  Sparkle,
 } from 'lucide-react';
 import api from '../../services/api.js';
 import { updateUserState } from '../../redux/authSlice.js';
@@ -32,7 +35,11 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState(initialTab); // 'stream' | 'security' | 'notifications' | 'uploads'
 
-  // Academic Stream State (Year & Semester Progression)
+  // Academic Stream State (College, Department, Year & Semester)
+  const [colleges, setColleges] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [selectedCollegeId, setSelectedCollegeId] = useState(user?.college_id || user?.college?.id || '');
+  const [selectedDeptId, setSelectedDeptId] = useState(user?.department_id || user?.department?.id || '');
   const [selectedYear, setSelectedYear] = useState(user?.academic_year || 1);
   const [selectedSem, setSelectedSem] = useState(user?.semester || 1);
   const [streamLoading, setStreamLoading] = useState(false);
@@ -104,6 +111,12 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
       if (initialTab) setActiveTab(initialTab);
       if (user?.academic_year) setSelectedYear(user.academic_year);
       if (user?.semester) setSelectedSem(user.semester);
+      if (user?.college_id || user?.college?.id) {
+        setSelectedCollegeId(user.college_id || user.college.id);
+      }
+      if (user?.department_id || user?.department?.id) {
+        setSelectedDeptId(user.department_id || user.department.id);
+      }
       setStreamSuccess('');
       setStreamError('');
       setPasswordSuccess('');
@@ -111,6 +124,27 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+
+      // Fetch dynamic colleges & departments
+      api
+        .get('/academic/colleges')
+        .catch(() => api.get('/colleges'))
+        .then((res) => {
+          if (res.data?.data && Array.isArray(res.data.data)) {
+            setColleges(res.data.data);
+          }
+        })
+        .catch((err) => console.warn('Colleges fetch notice:', err));
+
+      api
+        .get('/academic/departments')
+        .catch(() => api.get('/departments'))
+        .then((res) => {
+          if (res.data?.data && Array.isArray(res.data.data)) {
+            setDepartments(res.data.data);
+          }
+        })
+        .catch((err) => console.warn('Departments fetch notice:', err));
     }
   }, [isOpen, initialTab, user]);
 
@@ -123,12 +157,16 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
     setStreamLoading(true);
 
     try {
-      const response = await api.put('/auth/profile', {
+      const payload = {
+        college_id: selectedCollegeId || user?.college_id || user?.college?.id,
+        department_id: selectedDeptId || user?.department_id || user?.department?.id,
         academic_year: parseInt(selectedYear, 10),
         semester: parseInt(selectedSem, 10),
-      });
+      };
 
+      const response = await api.put('/auth/profile', payload);
       const updatedUser = response.data.data;
+
       dispatch(updateUserState(updatedUser));
       dispatch(syncFromUser(updatedUser));
 
@@ -151,8 +189,13 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
         })
       );
 
+      const deptObj = departments.find((d) => d.id === (selectedDeptId || updatedUser.department_id)) || updatedUser.department;
+      const deptLabel = deptObj?.name ? `${deptObj.name} (${deptObj.code || ''})` : 'Academic Branch';
+      const colObj = colleges.find((c) => c.id === (selectedCollegeId || updatedUser.college_id)) || updatedUser.college;
+      const colLabel = colObj?.name || 'Campus';
+
       setStreamSuccess(
-        `Academic stream successfully updated to Year ${selectedYear}, Semester ${selectedSem}! Your study materials and exam solver are now refreshed.`
+        `Stream updated! Successfully switched to ${deptLabel} (Year ${selectedYear}, Sem ${selectedSem}) at ${colLabel}. Study resources and solver refreshed.`
       );
     } catch (err) {
       setStreamError(err.message || 'Failed to update academic stream.');
@@ -290,30 +333,90 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
               </div>
             )}
 
-            {/* Permanent Verified Institutional Anchor */}
-            <div className="p-3.5 rounded-2xl neu-pressed bg-slate-50 dark:bg-[#101420] border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400 text-[11px]">Enrolled Institution:</span>
-                <span className="font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse" />
-                  {user?.college?.name || user?.college?.code || 'University Campus'}
+            {/* 1. College / University Selector */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <School className="w-3.5 h-3.5 text-brand-500" />
+                  <span>College / Institution</span>
                 </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400 text-[11px]">Department / Branch:</span>
-                <span className="font-semibold text-brand-600 dark:text-brand-300">
-                  {user?.department?.name || user?.department?.code || 'Engineering Stream'}
+                <span className="text-[11px] font-bold text-accent-emerald flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent-emerald animate-pulse" />
+                  Active Campus
                 </span>
-              </div>
-              <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-800/80">
-                <span className="text-slate-500 dark:text-slate-400 text-[11px]">Currently Active:</span>
-                <span className="font-extrabold text-amber-500 dark:text-amber-400">
-                  Year {user?.academic_year || 1} • Semester {user?.semester || 1}
+              </label>
+              <select
+                value={selectedCollegeId}
+                onChange={(e) => setSelectedCollegeId(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl neu-pressed bg-slate-50 dark:bg-[#101420] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer"
+              >
+                {colleges.length > 0 ? (
+                  colleges.map((col) => (
+                    <option key={col.id} value={col.id}>
+                      {col.name} ({col.code})
+                    </option>
+                  ))
+                ) : (
+                  <option value={user?.college_id || user?.college?.id || ''}>
+                    {user?.college?.name || 'Dhanalakshmi Srinivasan University Trichy (DSU)'}
+                  </option>
+                )}
+              </select>
+            </div>
+
+            {/* 2. Department / Branch Selector */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-accent-cyan" />
+                  <span>Branch / Department</span>
                 </span>
+                <span className="text-[11px] font-extrabold text-brand-500 dark:text-brand-300">
+                  {departments.find((d) => d.id === selectedDeptId)?.code || user?.department?.code || 'Branch'}
+                </span>
+              </label>
+
+              {/* Grid of 8 Engineering Departments */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(departments.length > 0
+                  ? departments
+                  : [
+                      { id: 'd1000000-0000-0000-0000-000000000001', name: 'Computer Science and Engineering', code: 'CSE' },
+                      { id: 'd1000000-0000-0000-0000-000000000005', name: 'Artificial Intelligence and Data Science', code: 'AI-DS' },
+                      { id: 'd1000000-0000-0000-0000-000000000006', name: 'Artificial Intelligence and Machine Learning', code: 'AIML' },
+                      { id: 'd1000000-0000-0000-0000-000000000007', name: 'Cybersecurity', code: 'CYB' },
+                      { id: 'd1000000-0000-0000-0000-000000000002', name: 'Electronics and Communication Engineering', code: 'ECE' },
+                      { id: 'd1000000-0000-0000-0000-000000000003', name: 'Electrical and Electronics Engineering', code: 'EEE' },
+                      { id: 'd1000000-0000-0000-0000-000000000004', name: 'Information Technology', code: 'IT' },
+                      { id: 'd1000000-0000-0000-0000-000000000008', name: 'Internet of Things', code: 'IOT' },
+                    ]
+                ).map((dept) => {
+                  const isSelected = selectedDeptId === dept.id || (!selectedDeptId && dept.code === 'CSE');
+                  return (
+                    <button
+                      key={dept.id}
+                      type="button"
+                      onClick={() => setSelectedDeptId(dept.id)}
+                      className={`p-2.5 rounded-xl text-left transition-all cursor-pointer ${
+                        isSelected
+                          ? 'neu-pressed border-2 border-brand-500 bg-brand-500/15 text-brand-600 dark:text-brand-300 font-black shadow-sm'
+                          : 'neu-button text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black">{dept.code}</span>
+                        {isSelected && <Check className="w-3 h-3 text-brand-500" />}
+                      </div>
+                      <span className="text-[10px] block opacity-80 truncate mt-0.5" title={dept.name}>
+                        {dept.name}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* 1. Academic Year Selector */}
+            {/* 3. Academic Year Selector */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center justify-between">
                 <span>Select Academic Year</span>
@@ -352,10 +455,10 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
               </div>
             </div>
 
-            {/* 2. Semester Selector */}
+            {/* 4. Semester Selector */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center justify-between">
-                <span>Select New Semester</span>
+                <span>Select Active Semester</span>
                 <span className="text-[11px] font-normal text-amber-500 dark:text-amber-400 font-bold">
                   Semester {selectedSem}
                 </span>
@@ -407,12 +510,12 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
                 {streamLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span>Updating Academic Stream...</span>
+                    <span>Saving Stream, Dept & College...</span>
                   </>
                 ) : (
                   <>
                     <Check className="w-4 h-4 text-white" />
-                    <span>Save & Switch to Semester {selectedSem}</span>
+                    <span>Save Stream (Dept, College, Year {selectedYear} • Sem {selectedSem})</span>
                   </>
                 )}
               </button>

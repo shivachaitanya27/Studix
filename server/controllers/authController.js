@@ -105,7 +105,13 @@ export const authController = {
         }
       }
 
-      // Handle convenience aliases for semester and year updates
+      // Handle convenience aliases for college, department, semester and year updates
+      if (req.body.collegeId !== undefined && updates.college_id === undefined) {
+        updates.college_id = req.body.collegeId;
+      }
+      if (req.body.departmentId !== undefined && updates.department_id === undefined) {
+        updates.department_id = req.body.departmentId;
+      }
       if (req.body.year !== undefined && updates.academic_year === undefined) {
         updates.academic_year = parseInt(req.body.year, 10);
       }

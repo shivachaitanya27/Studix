@@ -186,8 +186,51 @@ export const adminController = {
       });
     }
   },
+
+  // GET /api/v1/admin/users
+  async getUsers(req, res) {
+    try {
+      const { collegeId, departmentId, search } = req.query;
+      const users = await adminService.getAllUsers({ collegeId, departmentId, search });
+      return res.status(200).json({
+        success: true,
+        data: users,
+        count: users.length,
+      });
+    } catch (error) {
+      console.error('Fetch users error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve registered scholars.',
+      });
+    }
+  },
+
+  // PATCH /api/v1/admin/users/:id/stream
+  async updateUserStream(req, res) {
+    try {
+      const { collegeId, departmentId, academicYear, semester } = req.body;
+      const updated = await adminService.updateUserStream(
+        req.params.id,
+        { collegeId, departmentId, academicYear, semester },
+        req.user.id
+      );
+      return res.status(200).json({
+        success: true,
+        message: 'User academic stream updated successfully.',
+        data: updated,
+      });
+    } catch (error) {
+      const status = error.status || 500;
+      return res.status(status).json({
+        success: false,
+        message: error.message || 'Failed to update user stream.',
+      });
+    }
+  },
 };
 
 export default adminController;
+
 
 
