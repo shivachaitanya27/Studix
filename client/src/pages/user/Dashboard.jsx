@@ -21,6 +21,7 @@ import {
   Loader2,
   BookOpen,
   Lock,
+  Pencil,
 } from 'lucide-react';
 
 import { selectCurrentUser, uploadUserAvatar } from '../../redux/authSlice.js';
@@ -50,6 +51,7 @@ export const Dashboard = () => {
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState('stream');
   const avatarInputRef = React.useRef(null);
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState(null);
@@ -170,15 +172,30 @@ export const Dashboard = () => {
                   {department?.name || department?.code || 'Computer Science & Engineering'}
                 </span>
                 <span className="text-slate-500">•</span>
-                <span className="px-3 py-1 rounded-xl text-xs font-black bg-amber-400/15 text-amber-300 border border-amber-400/30 tracking-wide shadow-sm flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Year {year || 1} • Semester {semester || 1}</span>
-                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-3 py-1 rounded-xl text-xs font-black bg-amber-400/15 text-amber-300 border border-amber-400/30 tracking-wide shadow-sm flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Year {year || 1} • Semester {semester || 1}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsTab('stream');
+                      setIsSettingsOpen(true);
+                    }}
+                    id="dashboard-change-semester-btn"
+                    className="px-2.5 py-1 rounded-xl neu-button text-[10px] font-extrabold text-amber-400 hover:text-white flex items-center space-x-1 border border-amber-500/40 hover:bg-amber-500/15 transition-all shadow-sm cursor-pointer"
+                    title="Change your Academic Year and Semester"
+                  >
+                    <Pencil className="w-3 h-3 text-amber-400" />
+                    <span>Change Semester</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 flex-wrap gap-y-2">
             <div
               id="enrolled-campus-badge"
               className="px-3.5 py-2.5 rounded-xl neu-pressed text-slate-300 text-xs font-semibold flex items-center space-x-2 select-none"
@@ -189,9 +206,11 @@ export const Dashboard = () => {
               <span className="text-slate-400 font-medium">Enrolled</span>
             </div>
 
-
             <button
-              onClick={() => setIsSettingsOpen(true)}
+              onClick={() => {
+                setSettingsTab('security');
+                setIsSettingsOpen(true);
+              }}
               id="dashboard-open-settings-btn"
               title="Change Password & Account Settings"
               className="px-4 py-2.5 rounded-xl neu-button text-slate-800 dark:text-slate-200 hover:text-brand-600 dark:hover:text-white text-xs font-bold flex items-center space-x-2 border border-slate-300 dark:border-slate-700/60 hover:border-brand-500/40 transition-all"
@@ -324,8 +343,13 @@ export const Dashboard = () => {
       {/* Upload Modal */}
       <UploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} />
 
-      {/* Account & Password Settings Modal */}
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} user={user} />
+      {/* Account, Stream & Password Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        user={user}
+        initialTab={settingsTab}
+      />
 
       {/* Profile Photo Toast Notification */}
       {avatarToast && (

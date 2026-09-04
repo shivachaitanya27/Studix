@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import {
   X,
   Lock,
@@ -16,11 +17,27 @@ import {
   Loader2,
   Save,
   ArrowLeft,
+  GraduationCap,
+  Calendar,
+  Layers,
+  BookOpen,
+  Check,
 } from 'lucide-react';
 import api from '../../services/api.js';
+import { updateUserState } from '../../redux/authSlice.js';
+import { syncFromUser, fetchSubjects } from '../../redux/academicSlice.js';
+import { fetchResources } from '../../redux/resourceSlice.js';
 
-export const SettingsModal = ({ isOpen, onClose, user }) => {
-  const [activeTab, setActiveTab] = useState('security'); // 'security' | 'notifications' | 'uploads'
+export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) => {
+  const dispatch = useDispatch();
+  const [activeTab, setActiveTab] = useState(initialTab); // 'stream' | 'security' | 'notifications' | 'uploads'
+
+  // Academic Stream State (Year & Semester Progression)
+  const [selectedYear, setSelectedYear] = useState(user?.academic_year || 1);
+  const [selectedSem, setSelectedSem] = useState(user?.semester || 1);
+  const [streamLoading, setStreamLoading] = useState(false);
+  const [streamSuccess, setStreamSuccess] = useState('');
+  const [streamError, setStreamError] = useState('');
 
   // Change Password state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -83,16 +100,66 @@ export const SettingsModal = ({ isOpen, onClose, user }) => {
   const [settingsSavedToast, setSettingsSavedToast] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      if (initialTab) setActiveTab(initialTab);
+      if (user?.academic_year) setSelectedYear(user.academic_year);
+      if (user?.semester) setSelectedSem(user.semester);
+      setStreamSuccess('');
+      setStreamError('');
       setPasswordSuccess('');
       setPasswordError('');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     }
-  }, [isOpen]);
+  }, [isOpen, initialTab, user]);
 
   if (!isOpen) return null;
+
+  const handleUpdateStream = async (e) => {
+    e.preventDefault();
+    setStreamSuccess('');
+    setStreamError('');
+    setStreamLoading(true);
+
+    try {
+      const response = await api.put('/auth/profile', {
+        academic_year: parseInt(selectedYear, 10),
+        semester: parseInt(selectedSem, 10),
+      });
+
+      const updatedUser = response.data.data;
+      dispatch(updateUserState(updatedUser));
+      dispatch(syncFromUser(updatedUser));
+
+      if (updatedUser.department_id) {
+        dispatch(
+          fetchSubjects({
+            departmentId: updatedUser.department_id,
+            year: parseInt(selectedYear, 10),
+            semester: parseInt(selectedSem, 10),
+          })
+        );
+      }
+
+      dispatch(
+        fetchResources({
+          collegeId: updatedUser.college_id,
+          departmentId: updatedUser.department_id,
+          year: parseInt(selectedYear, 10),
+          semester: parseInt(selectedSem, 10),
+        })
+      );
+
+      setStreamSuccess(
+        `Academic stream successfully updated to Year ${selectedYear}, Semester ${selectedSem}! Your study materials and exam solver are now refreshed.`
+      );
+    } catch (err) {
+      setStreamError(err.message || 'Failed to update academic stream.');
+    } finally {
+      setStreamLoading(false);
+    }
+  };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -135,26 +202,25 @@ export const SettingsModal = ({ isOpen, onClose, user }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in">
       <div
         className="fixed inset-0"
         onClick={onClose}
-        aria-hidden="true"
       />
 
-      <div className="relative w-full max-w-xl rounded-3xl neu-flat bg-white dark:bg-[#151926] p-6 md:p-8 z-10 space-y-6 shadow-2xl border border-slate-200 dark:border-slate-700/60 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-11 h-11 rounded-2xl neu-button flex items-center justify-center text-brand-400 border border-brand-500/20">
-              <ShieldCheck className="w-6 h-6" />
+      <div className="relative w-full max-w-2xl bg-white dark:bg-[#131722] border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl z-10 max-h-[92vh] overflow-y-auto transition-colors">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 mb-5">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-2xl bg-brand-500/10 dark:bg-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400">
+              <GraduationCap className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                Account & App Settings
-              </h2>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                Change password, configure notifications, and manage upload permissions
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                Account & Academic Settings
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Manage your academic stream progression, security, and preferences
               </p>
             </div>
           </div>
@@ -169,8 +235,9 @@ export const SettingsModal = ({ isOpen, onClose, user }) => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex space-x-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <div className="flex space-x-1.5 sm:space-x-2 border-b border-slate-200 dark:border-slate-800 pb-3 overflow-x-auto scrollbar-none">
           {[
+            { id: 'stream', label: 'Academic Stream', icon: GraduationCap },
             { id: 'security', label: 'Security & Password', icon: Lock },
             { id: 'notifications', label: 'Notifications', icon: Bell },
             { id: 'uploads', label: 'Upload Permissions', icon: FileUp },
@@ -181,18 +248,177 @@ export const SettingsModal = ({ isOpen, onClose, user }) => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+                className={`px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 sm:space-x-2 whitespace-nowrap ${
                   isActive
                     ? 'neu-tab-active text-brand-600 dark:text-brand-300 font-extrabold border border-brand-500/30'
                     : 'neu-button text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                <Icon className="w-4 h-4 text-brand-400" />
+                <Icon className="w-4 h-4 text-brand-400 flex-shrink-0" />
                 <span>{tab.label}</span>
               </button>
             );
           })}
         </div>
+
+        {/* TAB 0: Academic Stream (Year & Semester Progression) */}
+        {activeTab === 'stream' && (
+          <form onSubmit={handleUpdateStream} className="space-y-4">
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-start space-x-3">
+              <GraduationCap className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-xs font-bold text-slate-800 dark:text-white">
+                  Quarterly Semester Progression
+                </h4>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
+                  Update your semester every 3 to 4 months as your academic term advances. Changing your stream here immediately reconfigures your curriculum subjects, lecture notes, and AI exam assistant.
+                </p>
+              </div>
+            </div>
+
+            {streamSuccess && (
+              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center space-x-2 animate-fade-in">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-500" />
+                <span>{streamSuccess}</span>
+              </div>
+            )}
+
+            {streamError && (
+              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center space-x-2 animate-fade-in">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{streamError}</span>
+              </div>
+            )}
+
+            {/* Permanent Verified Institutional Anchor */}
+            <div className="p-3.5 rounded-2xl neu-pressed bg-slate-50 dark:bg-[#101420] border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400 text-[11px]">Enrolled Institution:</span>
+                <span className="font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse" />
+                  {user?.college?.name || user?.college?.code || 'Dhanalakshmi Srinivasan University'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400 text-[11px]">Department / Branch:</span>
+                <span className="font-semibold text-brand-600 dark:text-brand-300">
+                  {user?.department?.name || user?.department?.code || 'Engineering Stream'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-800/80">
+                <span className="text-slate-500 dark:text-slate-400 text-[11px]">Currently Active:</span>
+                <span className="font-extrabold text-amber-500 dark:text-amber-400">
+                  Year {user?.academic_year || 1} • Semester {user?.semester || 1}
+                </span>
+              </div>
+            </div>
+
+            {/* 1. Academic Year Selector */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center justify-between">
+                <span>Select Academic Year</span>
+                <span className="text-[11px] font-normal text-brand-600 dark:text-brand-400">
+                  Year {selectedYear}
+                </span>
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {[1, 2, 3, 4].map((y) => {
+                  const isSelected = selectedYear === y;
+                  return (
+                    <button
+                      key={y}
+                      type="button"
+                      onClick={() => {
+                        setSelectedYear(y);
+                        const minSem = (y - 1) * 2 + 1;
+                        const maxSem = y * 2;
+                        if (selectedSem < minSem || selectedSem > maxSem) {
+                          setSelectedSem(minSem);
+                        }
+                      }}
+                      className={`p-2.5 rounded-xl text-center transition-all ${
+                        isSelected
+                          ? 'neu-pressed border-2 border-brand-500 bg-brand-500/10 text-brand-600 dark:text-brand-300 font-black shadow-sm'
+                          : 'neu-button text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <span className="text-xs sm:text-sm font-black block">Year {y}</span>
+                      <span className="text-[10px] block opacity-75">
+                        {y === 1 ? '1st Year' : y === 2 ? '2nd Year' : y === 3 ? '3rd Year' : 'Final Year'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. Semester Selector */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center justify-between">
+                <span>Select New Semester</span>
+                <span className="text-[11px] font-normal text-amber-500 dark:text-amber-400 font-bold">
+                  Semester {selectedSem}
+                </span>
+              </label>
+              <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5 sm:gap-2">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => {
+                  const isSelected = selectedSem === s;
+                  const isTypicalForYear = Math.ceil(s / 2) === selectedYear;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => {
+                        setSelectedSem(s);
+                        setSelectedYear(Math.ceil(s / 2));
+                      }}
+                      className={`p-2 sm:p-2.5 rounded-xl text-center transition-all ${
+                        isSelected
+                          ? 'neu-pressed border-2 border-amber-500 bg-amber-500/15 text-amber-500 dark:text-amber-300 font-black shadow-sm'
+                          : isTypicalForYear
+                          ? 'neu-button border border-brand-500/30 text-slate-800 dark:text-slate-200 font-bold'
+                          : 'neu-button text-slate-500 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                      }`}
+                    >
+                      <span className="text-xs sm:text-sm font-black block">Sem {s}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Form Actions */}
+            <div className="flex items-center space-x-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={onClose}
+                className="py-3 px-4 rounded-xl neu-button text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-bold transition-all flex items-center justify-center space-x-1"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Close</span>
+              </button>
+
+              <button
+                type="submit"
+                disabled={streamLoading}
+                id="save-academic-stream-btn"
+                className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-accent-violet hover:from-brand-500 hover:to-accent-violet text-white text-xs font-black shadow-glow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-[0.99] cursor-pointer"
+              >
+                {streamLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Updating Academic Stream...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 text-white" />
+                    <span>Save & Switch to Semester {selectedSem}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* TAB 1: Security & Password */}
         {activeTab === 'security' && (

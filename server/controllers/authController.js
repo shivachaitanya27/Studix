@@ -103,6 +103,20 @@ export const authController = {
         }
       }
 
+      // Handle convenience aliases for semester and year updates
+      if (req.body.year !== undefined && updates.academic_year === undefined) {
+        updates.academic_year = parseInt(req.body.year, 10);
+      }
+      if (req.body.sem !== undefined && updates.semester === undefined) {
+        updates.semester = parseInt(req.body.sem, 10);
+      }
+      if (updates.academic_year !== undefined) {
+        updates.academic_year = parseInt(updates.academic_year, 10);
+      }
+      if (updates.semester !== undefined) {
+        updates.semester = parseInt(updates.semester, 10);
+      }
+
       const updatedUser = await authService.updateProfile(req.user.id, updates);
       return res.status(200).json({
         success: true,

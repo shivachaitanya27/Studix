@@ -21,6 +21,7 @@ import {
   Building,
   CheckCircle2,
   Settings,
+  Pencil,
 } from 'lucide-react';
 import { logout, selectCurrentUser, uploadUserAvatar } from '../../redux/authSlice.js';
 import { supabase } from '../../services/supabaseClient.js';
@@ -53,6 +54,7 @@ export const Navbar = () => {
   const [avatarToast, setAvatarToast] = useState('');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState('stream');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleAvatarChange = async (e) => {
@@ -351,12 +353,41 @@ export const Navbar = () => {
                     {year && semester && (
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="text-slate-500 dark:text-slate-400">Class:</span>
-                        <span className="font-bold text-amber-500 dark:text-amber-400">
-                          Year {year}, Semester {semester}
-                        </span>
+                        <div className="flex items-center space-x-1.5">
+                          <span className="font-bold text-amber-500 dark:text-amber-400">
+                            Year {year}, Semester {semester}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsProfileMenuOpen(false);
+                              setSettingsInitialTab('stream');
+                              setIsSettingsOpen(true);
+                            }}
+                            className="p-1 rounded-lg neu-button text-amber-400 hover:text-white"
+                            title="Edit Year & Semester"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
+
+                  {/* Change Academic Stream & Semester Progression */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      setSettingsInitialTab('stream');
+                      setIsSettingsOpen(true);
+                    }}
+                    id="profile-dropdown-stream-btn"
+                    className="w-full py-2 px-3 rounded-xl neu-button text-xs font-bold text-amber-500 dark:text-amber-300 hover:text-white flex items-center justify-center space-x-2 border border-amber-500/40 transition-all bg-amber-500/5 hover:bg-amber-500/15"
+                  >
+                    <GraduationCap className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Change Semester & Year</span>
+                  </button>
 
                   {/* Profile Action: Change Photo */}
                   <button
@@ -374,6 +405,7 @@ export const Navbar = () => {
                     type="button"
                     onClick={() => {
                       setIsProfileMenuOpen(false);
+                      setSettingsInitialTab('security');
                       setIsSettingsOpen(true);
                     }}
                     id="profile-dropdown-settings-btn"
@@ -414,6 +446,7 @@ export const Navbar = () => {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         user={user}
+        initialTab={settingsInitialTab}
       />
 
       {/* Logout Confirmation Permission Modal */}
