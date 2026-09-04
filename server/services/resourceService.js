@@ -53,19 +53,16 @@ export const resourceService = {
       throw err;
     }
 
-    // 1. Calculate SHA-256 hash & enforce duplicate rejection (cryptographic hash + PDF content analysis)
+    // 1. Calculate SHA-256 cryptographic hash (catches identical files uploaded with any filename)
     const fileHash = duplicateDetectionService.calculateHash(file.buffer);
-    const initialCheck = await duplicateDetectionService.checkDuplicate({
-      fileHash,
-      buffer: file.buffer,
-    });
+    const hashCheck = await duplicateDetectionService.checkDuplicate({ fileHash });
 
-    if (initialCheck.isDuplicate) {
+    if (hashCheck.isDuplicate) {
       const err = new Error(duplicateDetectionService.DUPLICATE_MESSAGE);
       err.status = 409;
       err.isDuplicate = true;
-      err.existingResource = initialCheck.existingResource;
-      err.duplicateReason = initialCheck.reason;
+      err.existingResource = hashCheck.existingResource;
+      err.duplicateReason = hashCheck.reason;
       throw err;
     }
 
@@ -76,23 +73,6 @@ export const resourceService = {
       mimetype: file.mimetype,
       resourceType,
     });
-
-    // 2b. Secondary duplicate check with enriched extracted text
-    if (inspection.extractedText) {
-      const textCheck = await duplicateDetectionService.checkDuplicate({
-        fileHash,
-        extractedText: inspection.extractedText,
-      });
-
-      if (textCheck.isDuplicate) {
-        const err = new Error(duplicateDetectionService.DUPLICATE_MESSAGE);
-        err.status = 409;
-        err.isDuplicate = true;
-        err.existingResource = textCheck.existingResource;
-        err.duplicateReason = textCheck.reason;
-        throw err;
-      }
-    }
 
     // 3. Reject non-academic files immediately
     if (!inspection.isApproved) {
@@ -160,6 +140,24 @@ export const resourceService = {
       }
     }
 
+    // 4b. Scoped semantic duplicate check with extracted text (for re-printed / re-exported files)
+    if (inspection.extractedText && inspection.extractedText.length >= 150) {
+      const contentCheck = await duplicateDetectionService.checkDuplicate({
+        fileHash,
+        extractedText: inspection.extractedText,
+        departmentId: resolvedDeptId,
+        subjectId: resolvedSubjectId,
+      });
+
+      if (contentCheck.isDuplicate) {
+        const err = new Error(duplicateDetectionService.DUPLICATE_MESSAGE);
+        err.status = 409;
+        err.isDuplicate = true;
+        err.existingResource = contentCheck.existingResource;
+        err.duplicateReason = contentCheck.reason;
+        throw err;
+      }
+    }
 
     // 5. Persist file: Upload directly to Supabase Storage bucket 'academic-resources'
     const safeBase = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');

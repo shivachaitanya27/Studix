@@ -181,10 +181,9 @@ export const UploadModal = ({ isOpen, onClose }) => {
           ? payload
           : (payload?.message || 'Upload rejected. Please check your document.');
       const isDup =
-        payload?.isDuplicate ||
-        errorMsg.toLowerCase().includes('friend') ||
-        errorMsg.toLowerCase().includes('helping') ||
-        errorMsg.toLowerCase().includes('already');
+        Boolean(payload?.isDuplicate) ||
+        errorMsg.toLowerCase().includes('thanks fors helping') ||
+        errorMsg.toLowerCase().includes('your friend is already');
 
       if (isDup) {
         setDuplicatePopup({

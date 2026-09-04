@@ -31,9 +31,8 @@ export const uploadResource = createAsyncThunk(
         'Upload rejected by moderation system';
       const isDuplicate =
         Boolean(errorData?.isDuplicate) ||
-        err.response?.status === 409 ||
-        message.toLowerCase().includes('friend') ||
-        message.toLowerCase().includes('already');
+        message.toLowerCase().includes('thanks fors helping') ||
+        message.toLowerCase().includes('your friend is already');
 
       return rejectWithValue({
         message,
