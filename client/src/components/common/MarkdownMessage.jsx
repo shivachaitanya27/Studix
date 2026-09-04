@@ -1,8 +1,57 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Copy, Check } from 'lucide-react';
+
+const ChatGPTCodeBlock = ({ language, code }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  };
+
+  return (
+    <div className="my-3 rounded-2xl bg-[#0d1117] border border-slate-700/60 overflow-hidden font-mono shadow-xl text-left">
+      {/* Top Header Bar (ChatGPT style) */}
+      <div className="flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-slate-800 text-xs text-slate-400 select-none">
+        <span className="text-[11px] font-bold lowercase text-slate-400">
+          {language || 'code'}
+        </span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="flex items-center space-x-1.5 text-slate-400 hover:text-white transition-colors cursor-pointer text-[11px] py-0.5 px-2 rounded hover:bg-slate-800"
+          title="Copy code to clipboard"
+        >
+          {copied ? (
+            <>
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-emerald-400 font-bold">Copied!</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-3.5 h-3.5" />
+              <span>Copy code</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Code Body */}
+      <pre className="p-4 overflow-x-auto text-[11px] sm:text-[12px] leading-relaxed text-emerald-300 whitespace-pre">
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+};
 
 /**
  * Custom lightweight, secure, and beautiful Markdown parser for AI academic responses.
- * Renders headings, bold text, bullet points, blockquotes, inline code, and code/ASCII blocks.
+ * Renders headings, bold text, bullet points, blockquotes, inline code, tables, and ChatGPT-style code blocks.
  */
 export const MarkdownMessage = ({ content }) => {
   if (!content) return null;
@@ -22,19 +71,11 @@ export const MarkdownMessage = ({ content }) => {
       if (inCodeBlock) {
         // End of code block
         elements.push(
-          <div
+          <ChatGPTCodeBlock
             key={`code-${i}`}
-            className="my-3 rounded-2xl bg-slate-950/80 border border-slate-700/50 p-3.5 overflow-x-auto font-mono text-[11px] text-emerald-300 shadow-inner"
-          >
-            {codeLanguage && (
-              <div className="text-[9px] font-bold uppercase text-slate-500 mb-1 border-b border-slate-800 pb-1">
-                {codeLanguage}
-              </div>
-            )}
-            <pre className="leading-relaxed whitespace-pre font-mono">
-              {codeBlockLines.join('\n')}
-            </pre>
-          </div>
+            language={codeLanguage}
+            code={codeBlockLines.join('\n')}
+          />
         );
         inCodeBlock = false;
         codeBlockLines = [];
@@ -42,7 +83,7 @@ export const MarkdownMessage = ({ content }) => {
       } else {
         // Start of code block
         inCodeBlock = true;
-        codeLanguage = line.trim().replace('```', '');
+        codeLanguage = line.trim().replace('```', '').trim();
         codeBlockLines = [];
       }
       continue;
