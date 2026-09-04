@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { createPortal } from 'react-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText,
@@ -14,13 +15,24 @@ import {
   Eye,
   Sparkles,
   X,
+  Trash2,
 } from 'lucide-react';
-import { toggleBookmark } from '../../redux/resourceSlice.js';
+import { toggleBookmark, deleteResource } from '../../redux/resourceSlice.js';
+import { selectCurrentUser } from '../../redux/authSlice.js';
 
 export const ResourceCard = ({ resource, isBookmarked = false }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const user = useSelector(selectCurrentUser);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const isAdmin =
+    user &&
+    (user.role === 'ADMIN' ||
+      user.role === 'SUPER_ADMIN' ||
+      (user.email || '').toLowerCase().trim() === 'vshivachaitanya7@gmail.com');
 
 
   const [viewMode, setViewMode] = useState('pdf'); // 'pdf' | 'ocr'
@@ -99,6 +111,20 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
                 className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`}
               />
             </button>
+
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDeleteConfirm(true);
+                }}
+                className="p-1.5 rounded-xl neu-button text-rose-400 hover:text-rose-500 hover:bg-rose-500/10 border border-rose-500/30 transition-colors"
+                title="Remove Unwanted File (Admin)"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -294,6 +320,18 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
               </button>
 
               <div className="flex items-center space-x-2">
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="px-3 py-2 rounded-xl neu-button text-xs font-bold text-rose-500 hover:bg-rose-500/10 border border-rose-500/30 flex items-center space-x-1.5 cursor-pointer"
+                    title="Remove Unwanted File (Admin)"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Remove File</span>
+                    <span className="sm:hidden">Delete</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setIsPreviewOpen(false)}
@@ -314,6 +352,58 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Admin Purge / Remove Confirmation Dialog Portaled to Body */}
+      {typeof document !== 'undefined' && showDeleteConfirm && createPortal(
+        <div
+          className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="fixed inset-0" onClick={() => setShowDeleteConfirm(false)} />
+          <div className="relative w-full max-w-sm rounded-3xl bg-white dark:bg-[#151926] p-6 z-10 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800 text-center">
+            <div className="w-14 h-14 rounded-2xl mx-auto neu-button flex items-center justify-center text-rose-500 border border-rose-500/30 bg-rose-500/10">
+              <Trash2 className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
+                Remove Unwanted File?
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                Permanently delete <span className="font-bold text-slate-900 dark:text-white">&quot;{resource.title}&quot;</span> from the university academic repository and storage?
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="py-2.5 px-4 rounded-xl neu-button text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={async () => {
+                  try {
+                    setIsDeleting(true);
+                    await dispatch(deleteResource(resource.id)).unwrap();
+                    setShowDeleteConfirm(false);
+                    setIsPreviewOpen(false);
+                  } catch (err) {
+                    alert('Failed to delete file: ' + (typeof err === 'string' ? err : err?.message || 'Error'));
+                  } finally {
+                    setIsDeleting(false);
+                  }
+                }}
+                className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white text-xs font-bold shadow-lg transition-all cursor-pointer"
+              >
+                {isDeleting ? 'Removing...' : 'Delete File'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

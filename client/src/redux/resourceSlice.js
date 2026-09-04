@@ -53,6 +53,25 @@ export const fetchUserBookmarks = createAsyncThunk(
   }
 );
 
+export const deleteResource = createAsyncThunk(
+  'resources/deleteResource',
+  async (resourceId, { rejectWithValue }) => {
+    try {
+      await api.delete(`/admin/resources/${resourceId}`);
+      return { resourceId };
+    } catch (err) {
+      try {
+        await api.delete(`/resources/${resourceId}`);
+        return { resourceId };
+      } catch (fallbackErr) {
+        return rejectWithValue(
+          fallbackErr.response?.data?.message || fallbackErr.message || 'Failed to delete resource'
+        );
+      }
+    }
+  }
+);
+
 const initialState = {
   resources: [],
   bookmarks: [],
@@ -83,6 +102,12 @@ const resourceSlice = createSlice({
       state.isUploading = false;
       state.uploadError = null;
       state.uploadSuccess = false;
+    },
+    removeResource: (state, action) => {
+      state.resources = state.resources.filter((r) => r.id !== action.payload);
+      state.bookmarks = state.bookmarks.filter(
+        (b) => (b.id || b.resource_id) !== action.payload
+      );
     },
   },
   extraReducers: (builder) => {
@@ -142,6 +167,14 @@ const resourceSlice = createSlice({
     builder.addCase(fetchUserBookmarks.fulfilled, (state, action) => {
       state.bookmarks = action.payload;
     });
+
+    // Delete resource
+    builder.addCase(deleteResource.fulfilled, (state, action) => {
+      state.resources = state.resources.filter((r) => r.id !== action.payload.resourceId);
+      state.bookmarks = state.bookmarks.filter(
+        (b) => (b.id || b.resource_id) !== action.payload.resourceId
+      );
+    });
   },
 });
 
@@ -150,6 +183,7 @@ export const {
   setSearchQuery,
   setSelectedSubjectFilter,
   resetUploadStatus,
+  removeResource,
 } = resourceSlice.actions;
 
 export const selectResources = (state) => state.resources.resources;

@@ -24,6 +24,7 @@ import {
   Download,
   Trash2,
   FolderOpen,
+  Search,
 } from 'lucide-react';
 import api from '../../services/api.js';
 import { selectCurrentUser } from '../../redux/authSlice.js';
@@ -38,6 +39,10 @@ export const AdminDashboard = () => {
   const [allResources, setAllResources] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Search & Filter State for Catalog Management
+  const [adminSearchQuery, setAdminSearchQuery] = useState('');
+  const [adminStatusFilter, setAdminStatusFilter] = useState('ALL');
 
   // Review Modal State
   const [selectedResource, setSelectedResource] = useState(null);
@@ -400,81 +405,143 @@ export const AdminDashboard = () => {
       )}
 
       {/* TAB 4: All Resources (Catalog) & Content Governance */}
-      {activeTab === 'all' && (
-        <div className="space-y-4 animate-fade-in">
-          <div className="p-4 rounded-2xl neu-flat text-xs text-slate-300 flex items-center justify-between">
-            <span>Unified repository catalog across colleges with one-click purge and governance.</span>
-            <span className="font-bold text-emerald-400">{allResources.length} Indexed Materials</span>
-          </div>
+      {activeTab === 'all' && (() => {
+        const filteredCatalog = allResources.filter((item) => {
+          if (adminStatusFilter !== 'ALL' && item.status !== adminStatusFilter) {
+            return false;
+          }
+          if (!adminSearchQuery.trim()) return true;
+          const q = adminSearchQuery.toLowerCase();
+          const titleMatch = (item.title || '').toLowerCase().includes(q);
+          const subjectMatch = (item.subject?.name || item.subject?.code || '').toLowerCase().includes(q);
+          const collegeMatch = (item.college?.name || item.college?.code || '').toLowerCase().includes(q);
+          const typeMatch = (item.resource_type || '').toLowerCase().includes(q);
+          return titleMatch || subjectMatch || collegeMatch || typeMatch;
+        });
 
-          {allResources.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3.5">
-              {allResources.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-5 rounded-2xl neu-flat flex flex-col md:flex-row md:items-center justify-between gap-4"
+        return (
+          <div className="space-y-4 animate-fade-in">
+            {/* Header & Stats Banner */}
+            <div className="p-4 rounded-2xl neu-flat text-xs text-slate-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <span>Unified repository catalog across colleges with instant purge and governance.</span>
+              <span className="font-bold text-emerald-400">{filteredCatalog.length} of {allResources.length} Materials Found</span>
+            </div>
+
+            {/* Live Search & Status Filter Controls */}
+            <div className="p-4 rounded-2xl neu-flat flex flex-col sm:flex-row items-center gap-3">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={adminSearchQuery}
+                  onChange={(e) => setAdminSearchQuery(e.target.value)}
+                  placeholder="Filter unwanted files by title, subject, department, or college..."
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl neu-pressed text-xs text-slate-200 placeholder-slate-500 focus:outline-none"
+                />
+                {adminSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setAdminSearchQuery('')}
+                    className="absolute right-3 top-2.5 p-1 rounded-lg text-slate-400 hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="w-full sm:w-48">
+                <select
+                  value={adminStatusFilter}
+                  onChange={(e) => setAdminStatusFilter(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-200 focus:outline-none"
                 >
-                  <div className="space-y-1.5 min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-black neu-pressed text-brand-300">
-                        {item.resource_type}
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          item.status === 'APPROVED'
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                            : item.status === 'REJECTED'
-                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                            : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                        }`}
-                      >
-                        {item.status}
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        {item.college?.name || item.college?.code || 'University Stream'}
-                      </span>
+                  <option value="ALL">All Statuses</option>
+                  <option value="APPROVED">Approved Materials</option>
+                  <option value="PENDING">Pending Moderation</option>
+                  <option value="REJECTED">Rejected Materials</option>
+                </select>
+              </div>
+            </div>
+
+            {filteredCatalog.length > 0 ? (
+              <div className="grid grid-cols-1 gap-3.5">
+                {filteredCatalog.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-5 rounded-2xl neu-flat flex flex-col md:flex-row md:items-center justify-between gap-4"
+                  >
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-black neu-pressed text-brand-300">
+                          {item.resource_type}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            item.status === 'APPROVED'
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                              : item.status === 'REJECTED'
+                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                              : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          }`}
+                        >
+                          {item.status}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {item.college?.name || item.college?.code || 'University Stream'}
+                        </span>
+                      </div>
+                      <h3 className="text-sm font-bold text-white truncate">{item.title}</h3>
+                      <p className="text-xs text-slate-400 flex items-center space-x-2">
+                        <span>Subject: {item.subject?.name || 'Curriculum Subject'}</span>
+                        <span>•</span>
+                        <span>Year {item.year}, Sem {item.semester}</span>
+                      </p>
                     </div>
-                    <h3 className="text-sm font-bold text-white truncate">{item.title}</h3>
-                    <p className="text-xs text-slate-400 flex items-center space-x-2">
-                      <span>Subject: {item.subject?.name || 'Curriculum Subject'}</span>
-                      <span>•</span>
-                      <span>Year {item.year}, Sem {item.semester}</span>
-                    </p>
-                  </div>
 
-                  <div className="flex items-center space-x-2 flex-shrink-0">
-                    <button
-                      onClick={() => setPreviewResource(item)}
-                      className="px-3 py-2 rounded-xl neu-button text-xs font-semibold text-slate-300 hover:text-white flex items-center space-x-1.5"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-accent-cyan" />
-                      <span>Preview</span>
-                    </button>
+                    <div className="flex items-center space-x-2 flex-shrink-0">
+                      <button
+                        onClick={() => setPreviewResource(item)}
+                        className="px-3 py-2 rounded-xl neu-button text-xs font-semibold text-slate-300 hover:text-white flex items-center space-x-1.5 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-accent-cyan" />
+                        <span>Preview</span>
+                      </button>
 
-                    <button
-                      onClick={() => handleDeleteResource(item)}
-                      className="px-3.5 py-2 rounded-xl neu-button text-xs font-bold text-red-400 hover:text-white flex items-center space-x-1.5 border-red-500/30 hover:bg-red-600/30"
-                      title="Permanently Purge Resource"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Purge</span>
-                    </button>
+                      <button
+                        onClick={() => handleDeleteResource(item)}
+                        className="px-3.5 py-2 rounded-xl neu-button text-xs font-bold text-red-400 hover:text-white flex items-center space-x-1.5 border border-red-500/30 hover:bg-red-600/30 cursor-pointer"
+                        title="Permanently Purge Resource"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Purge File</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-12 rounded-3xl neu-pressed text-center space-y-2">
-              <FolderOpen className="w-10 h-10 text-slate-500 mx-auto" />
-              <h3 className="text-base font-bold text-white">No Resources in Catalog</h3>
-              <p className="text-xs text-slate-400">The repository catalog is currently empty.</p>
-            </div>
-          )}
-        </div>
-      )}
+                ))}
+              </div>
+            ) : (
+              <div className="p-12 rounded-3xl neu-pressed text-center space-y-2">
+                <FolderOpen className="w-10 h-10 text-slate-500 mx-auto" />
+                <h3 className="text-base font-bold text-white">No Resources Found</h3>
+                <p className="text-xs text-slate-400">No materials match your current search and status filters.</p>
+                {adminSearchQuery && (
+                  <button
+                    onClick={() => {
+                      setAdminSearchQuery('');
+                      setAdminStatusFilter('ALL');
+                    }}
+                    className="mt-2 px-3.5 py-1.5 rounded-xl neu-button text-xs font-bold text-brand-300 cursor-pointer"
+                  >
+                    Reset Filters
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Document Preview Modal */}
-
       {previewResource && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setPreviewResource(null)} />
@@ -483,7 +550,7 @@ export const AdminDashboard = () => {
               <h3 className="text-sm font-bold text-white truncate max-w-[380px]">
                 {previewResource.title}
               </h3>
-              <button onClick={() => setPreviewResource(null)} className="p-1.5 rounded-lg neu-button text-slate-400 hover:text-white">
+              <button onClick={() => setPreviewResource(null)} className="p-1.5 rounded-lg neu-button text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -496,8 +563,22 @@ export const AdminDashboard = () => {
 
             <div className="flex items-center justify-end space-x-2 pt-2">
               <button
+                type="button"
+                onClick={() => {
+                  const resToPurge = previewResource;
+                  setPreviewResource(null);
+                  handleDeleteResource(resToPurge);
+                }}
+                className="px-4 py-2 rounded-xl neu-button text-xs font-bold text-rose-400 hover:text-white flex items-center space-x-1.5 border border-rose-500/40 hover:bg-rose-600/30 cursor-pointer"
+                title="Permanently remove this unwanted file"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Purge Unwanted File</span>
+              </button>
+
+              <button
                 onClick={() => window.open(previewResource.file_url, '_blank')}
-                className="px-4 py-2 rounded-xl neu-button text-xs font-bold text-white flex items-center space-x-1.5"
+                className="px-4 py-2 rounded-xl neu-button text-xs font-bold text-white flex items-center space-x-1.5 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5 text-brand-400" />
                 <span>Open File Document</span>
