@@ -25,6 +25,10 @@ import {
   Trash2,
   FolderOpen,
   Search,
+  CheckSquare,
+  Square,
+  Filter,
+  GraduationCap,
 } from 'lucide-react';
 import api from '../../services/api.js';
 import { selectCurrentUser } from '../../redux/authSlice.js';
@@ -40,9 +44,19 @@ export const AdminDashboard = () => {
   const [analytics, setAnalytics] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Search & Filter State for Catalog Management
+  // Multi-Tenant Global College & Stream Filter State (Exclusively for Admin)
+  const [colleges, setColleges] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [selectedAdminCollege, setSelectedAdminCollege] = useState('ALL');
+  const [selectedAdminDept, setSelectedAdminDept] = useState('ALL');
+  const [selectedAdminYear, setSelectedAdminYear] = useState('ALL');
+  const [selectedAdminSemester, setSelectedAdminSemester] = useState('ALL');
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
   const [adminStatusFilter, setAdminStatusFilter] = useState('ALL');
+
+  // Bulk Clean / Purge Selection State
+  const [selectedResourceIds, setSelectedResourceIds] = useState(new Set());
+  const [isBulkCleaning, setIsBulkCleaning] = useState(false);
 
   // Review Modal State
   const [selectedResource, setSelectedResource] = useState(null);
@@ -62,20 +76,24 @@ export const AdminDashboard = () => {
     }
   }, [user, navigate]);
 
-  // 2. Fetch data
+  // 2. Fetch data (Global multi-tenant data for Admin)
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [queueRes, logsRes, analyticsRes, allRes] = await Promise.all([
+      const [queueRes, logsRes, analyticsRes, allRes, collegesRes, deptsRes] = await Promise.all([
         api.get('/admin/moderation/queue'),
         api.get('/admin/moderation/logs'),
         api.get('/admin/analytics'),
         api.get('/resources?status=ALL'),
+        api.get('/colleges').catch(() => ({ data: { data: [] } })),
+        api.get('/departments').catch(() => ({ data: { data: [] } })),
       ]);
       setQueue(queueRes.data.data || []);
       setLogs(logsRes.data.data || []);
       setAnalytics(analyticsRes.data.data || null);
       setAllResources(allRes.data.data || []);
+      setColleges(collegesRes.data.data || []);
+      setDepartments(deptsRes.data.data || []);
     } catch (err) {
       console.error('Failed to load admin data:', err);
     } finally {
@@ -125,6 +143,49 @@ export const AdminDashboard = () => {
       setTimeout(() => setActionSuccess(''), 3500);
     } catch (err) {
       alert('Failed to delete resource: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleToggleSelectAll = (filteredItems) => {
+    if (selectedResourceIds.size === filteredItems.length && filteredItems.length > 0) {
+      setSelectedResourceIds(new Set());
+    } else {
+      setSelectedResourceIds(new Set(filteredItems.map((r) => r.id)));
+    }
+  };
+
+  const handleToggleSelectItem = (id) => {
+    setSelectedResourceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkClean = async () => {
+    if (selectedResourceIds.size === 0) return;
+    if (
+      !window.confirm(
+        `Are you sure you want to permanently PURGE ${selectedResourceIds.size} unwanted files from various college streams? This will delete them permanently from the PostgreSQL database and Supabase Storage.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setIsBulkCleaning(true);
+      const res = await api.post('/admin/resources/bulk-delete', {
+        resourceIds: Array.from(selectedResourceIds),
+      });
+      setActionSuccess(res.data.message || `Successfully purged ${selectedResourceIds.size} unwanted files.`);
+      setSelectedResourceIds(new Set());
+      await fetchData();
+      setTimeout(() => setActionSuccess(''), 4000);
+    } catch (err) {
+      alert('Failed to clean selected files: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsBulkCleaning(false);
     }
   };
 
@@ -217,9 +278,9 @@ export const AdminDashboard = () => {
               : 'neu-button text-slate-400 hover:text-white'
           }`}
         >
-          <FolderOpen className="w-4 h-4 text-emerald-400" />
-          <span>All Resources (Catalog)</span>
-          <span className="px-1.5 py-0.5 rounded-full text-[10px] neu-pressed text-emerald-300 font-black">
+          <Trash2 className="w-4 h-4 text-rose-400" />
+          <span>Multi-Campus File Cleaner</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] neu-pressed text-rose-300 font-black">
             {allResources.length}
           </span>
         </button>
@@ -404,27 +465,150 @@ export const AdminDashboard = () => {
         </div>
       )}
 
-      {/* TAB 4: All Resources (Catalog) & Content Governance */}
+      {/* TAB 4: All Resources & Multi-Campus Unwanted File Cleaner */}
       {activeTab === 'all' && (() => {
+        const availableDepartments = departments.filter((d) => {
+          if (selectedAdminCollege === 'ALL') return true;
+          return d.college_id === selectedAdminCollege;
+        });
+
         const filteredCatalog = allResources.filter((item) => {
+          // 1. College filter
+          if (selectedAdminCollege !== 'ALL') {
+            const itemCollegeId = item.college_id || item.college?.id;
+            if (itemCollegeId !== selectedAdminCollege) return false;
+          }
+          // 2. Department / Branch filter
+          if (selectedAdminDept !== 'ALL') {
+            const itemDeptId = item.department_id || item.department?.id;
+            if (itemDeptId !== selectedAdminDept) return false;
+          }
+          // 3. Year filter
+          if (selectedAdminYear !== 'ALL') {
+            if (parseInt(item.year, 10) !== parseInt(selectedAdminYear, 10)) return false;
+          }
+          // 4. Semester filter
+          if (selectedAdminSemester !== 'ALL') {
+            if (parseInt(item.semester, 10) !== parseInt(selectedAdminSemester, 10)) return false;
+          }
+          // 5. Status filter
           if (adminStatusFilter !== 'ALL' && item.status !== adminStatusFilter) {
             return false;
           }
+          // 6. Search query
           if (!adminSearchQuery.trim()) return true;
           const q = adminSearchQuery.toLowerCase();
           const titleMatch = (item.title || '').toLowerCase().includes(q);
           const subjectMatch = (item.subject?.name || item.subject?.code || '').toLowerCase().includes(q);
           const collegeMatch = (item.college?.name || item.college?.code || '').toLowerCase().includes(q);
+          const deptMatch = (item.department?.name || item.department?.code || '').toLowerCase().includes(q);
+          const uploaderMatch = (item.uploader?.full_name || item.uploader?.email || '').toLowerCase().includes(q);
           const typeMatch = (item.resource_type || '').toLowerCase().includes(q);
-          return titleMatch || subjectMatch || collegeMatch || typeMatch;
+          return titleMatch || subjectMatch || collegeMatch || deptMatch || uploaderMatch || typeMatch;
         });
 
         return (
           <div className="space-y-4 animate-fade-in">
             {/* Header & Stats Banner */}
             <div className="p-4 rounded-2xl neu-flat text-xs text-slate-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <span>Unified repository catalog across colleges with instant purge and governance.</span>
-              <span className="font-bold text-emerald-400">{filteredCatalog.length} of {allResources.length} Materials Found</span>
+              <span className="flex items-center space-x-2">
+                <ShieldCheck className="w-4 h-4 text-purple-400" />
+                <span>Admin Master Governance: Select any campus, branch, year, and semester to purge unwanted files.</span>
+              </span>
+              <span className="font-bold text-rose-400">{filteredCatalog.length} of {allResources.length} Materials Found</span>
+            </div>
+
+            {/* Multi-Tenant Global College & Stream Filters (Only for Admin) */}
+            <div className="p-4 sm:p-5 rounded-2xl neu-flat space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-xs font-black text-amber-400 uppercase tracking-wider">
+                  <Filter className="w-4 h-4 text-amber-400" />
+                  <span>Admin Multi-Campus & Stream Selector</span>
+                </div>
+                <span className="text-[11px] text-slate-400">
+                  Filter cross-campus files by university, branch, year & semester
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* 1. College Selector */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Select College / Campus
+                  </label>
+                  <select
+                    value={selectedAdminCollege}
+                    onChange={(e) => {
+                      setSelectedAdminCollege(e.target.value);
+                      setSelectedAdminDept('ALL');
+                    }}
+                    className="w-full px-3 py-2 rounded-xl neu-pressed text-xs text-slate-200 focus:outline-none"
+                  >
+                    <option value="ALL">🏫 All Colleges & Campuses</option>
+                    {colleges.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Department / Branch Selector */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Select Branch / Department
+                  </label>
+                  <select
+                    value={selectedAdminDept}
+                    onChange={(e) => setSelectedAdminDept(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl neu-pressed text-xs text-slate-200 focus:outline-none"
+                  >
+                    <option value="ALL">🏛️ All Branches & Streams</option>
+                    {availableDepartments.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name} ({d.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 3. Year Selector */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Select Academic Year
+                  </label>
+                  <select
+                    value={selectedAdminYear}
+                    onChange={(e) => setSelectedAdminYear(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl neu-pressed text-xs text-slate-200 focus:outline-none"
+                  >
+                    <option value="ALL">📅 All Years (1-4)</option>
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                  </select>
+                </div>
+
+                {/* 4. Semester Selector */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Select Active Semester
+                  </label>
+                  <select
+                    value={selectedAdminSemester}
+                    onChange={(e) => setSelectedAdminSemester(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl neu-pressed text-xs text-slate-200 focus:outline-none"
+                  >
+                    <option value="ALL">🎓 All Semesters (1-8)</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                      <option key={s} value={s}>
+                        Semester {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
 
             {/* Live Search & Status Filter Controls */}
@@ -435,7 +619,7 @@ export const AdminDashboard = () => {
                   type="text"
                   value={adminSearchQuery}
                   onChange={(e) => setAdminSearchQuery(e.target.value)}
-                  placeholder="Filter unwanted files by title, subject, department, or college..."
+                  placeholder="Search unwanted files by title, subject, student uploader, or college..."
                   className="w-full pl-10 pr-10 py-2.5 rounded-xl neu-pressed text-xs text-slate-200 placeholder-slate-500 focus:outline-none"
                 />
                 {adminSearchQuery && (
@@ -463,76 +647,183 @@ export const AdminDashboard = () => {
               </div>
             </div>
 
+            {/* Bulk Clean Action Toolbar */}
+            {filteredCatalog.length > 0 && (
+              <div className="p-3.5 rounded-2xl neu-flat flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-rose-500/5 border border-rose-500/20">
+                <div className="flex items-center space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleSelectAll(filteredCatalog)}
+                    className="flex items-center space-x-2 text-xs font-bold text-slate-200 hover:text-white cursor-pointer"
+                  >
+                    {selectedResourceIds.size === filteredCatalog.length && filteredCatalog.length > 0 ? (
+                      <CheckSquare className="w-4 h-4 text-rose-400" />
+                    ) : (
+                      <Square className="w-4 h-4 text-slate-500" />
+                    )}
+                    <span>
+                      {selectedResourceIds.size === filteredCatalog.length && filteredCatalog.length > 0
+                        ? 'Deselect All'
+                        : `Select All Filtered (${filteredCatalog.length})`}
+                    </span>
+                  </button>
+                  {selectedResourceIds.size > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                      {selectedResourceIds.size} selected
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  {selectedResourceIds.size > 0 && (
+                    <button
+                      type="button"
+                      disabled={isBulkCleaning}
+                      onClick={handleBulkClean}
+                      className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-glow flex items-center space-x-2 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>
+                        {isBulkCleaning
+                          ? 'Purging Files...'
+                          : `Clean & Purge ${selectedResourceIds.size} Selected Files`}
+                      </span>
+                    </button>
+                  )}
+                  {(selectedAdminCollege !== 'ALL' ||
+                    selectedAdminDept !== 'ALL' ||
+                    selectedAdminYear !== 'ALL' ||
+                    selectedAdminSemester !== 'ALL' ||
+                    adminSearchQuery ||
+                    adminStatusFilter !== 'ALL') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedAdminCollege('ALL');
+                        setSelectedAdminDept('ALL');
+                        setSelectedAdminYear('ALL');
+                        setSelectedAdminSemester('ALL');
+                        setAdminSearchQuery('');
+                        setAdminStatusFilter('ALL');
+                        setSelectedResourceIds(new Set());
+                      }}
+                      className="px-3 py-2 rounded-xl neu-button text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
+                    >
+                      Reset All Filters
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {filteredCatalog.length > 0 ? (
               <div className="grid grid-cols-1 gap-3.5">
-                {filteredCatalog.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-5 rounded-2xl neu-flat flex flex-col md:flex-row md:items-center justify-between gap-4"
-                  >
-                    <div className="space-y-1.5 min-w-0">
-                      <div className="flex items-center space-x-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-black neu-pressed text-brand-300">
-                          {item.resource_type}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            item.status === 'APPROVED'
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                              : item.status === 'REJECTED'
-                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                              : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                          }`}
+                {filteredCatalog.map((item) => {
+                  const isSelected = selectedResourceIds.has(item.id);
+                  return (
+                    <div
+                      key={item.id}
+                      className={`p-4 sm:p-5 rounded-2xl neu-flat flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${
+                        isSelected ? 'border border-rose-500/40 bg-rose-500/5' : ''
+                      }`}
+                    >
+                      <div className="flex items-start space-x-3 min-w-0 flex-1">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSelectItem(item.id)}
+                          className="mt-1 flex-shrink-0 cursor-pointer text-slate-400 hover:text-white"
+                          title={isSelected ? 'Deselect file' : 'Select file for purge'}
                         >
-                          {item.status}
-                        </span>
-                        <span className="text-[10px] text-slate-400">
-                          {item.college?.name || item.college?.code || 'University Stream'}
-                        </span>
+                          {isSelected ? (
+                            <CheckSquare className="w-4 h-4 text-rose-400" />
+                          ) : (
+                            <Square className="w-4 h-4 text-slate-500" />
+                          )}
+                        </button>
+
+                        <div className="space-y-1.5 min-w-0 flex-1">
+                          <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-black neu-pressed text-brand-300">
+                              {item.resource_type}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                item.status === 'APPROVED'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  : item.status === 'REJECTED'
+                                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              }`}
+                            >
+                              {item.status}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-lg bg-dark-base border border-dark-border text-[10px] text-amber-300 font-semibold flex items-center space-x-1">
+                              <span>🏫 {item.college?.name || item.college?.code || 'Campus'}</span>
+                            </span>
+                            <span className="px-2 py-0.5 rounded-lg bg-dark-base border border-dark-border text-[10px] text-brand-300 font-semibold">
+                              🏛️ {item.department?.name || item.department?.code || 'Branch'}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-lg bg-dark-base border border-dark-border text-[10px] text-slate-300 font-semibold">
+                              Year {item.year} • Sem {item.semester}
+                            </span>
+                          </div>
+
+                          <h3 className="text-sm font-bold text-white truncate">{item.title}</h3>
+
+                          <div className="text-xs text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span>Subject: <strong className="text-slate-200">{item.subject?.name || 'Manual Subject'}</strong></span>
+                            <span>•</span>
+                            <span>Uploaded by: <strong className="text-slate-300">{item.uploader?.full_name || 'Student'}</strong> {item.uploader?.email ? `(${item.uploader.email})` : ''}</span>
+                            <span>•</span>
+                            <span>{item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}</span>
+                          </div>
+                        </div>
                       </div>
-                      <h3 className="text-sm font-bold text-white truncate">{item.title}</h3>
-                      <p className="text-xs text-slate-400 flex items-center space-x-2">
-                        <span>Subject: {item.subject?.name || 'Curriculum Subject'}</span>
-                        <span>•</span>
-                        <span>Year {item.year}, Sem {item.semester}</span>
-                      </p>
-                    </div>
 
-                    <div className="flex items-center space-x-2 flex-shrink-0">
-                      <button
-                        onClick={() => setPreviewResource(item)}
-                        className="px-3 py-2 rounded-xl neu-button text-xs font-semibold text-slate-300 hover:text-white flex items-center space-x-1.5 cursor-pointer"
-                      >
-                        <Eye className="w-3.5 h-3.5 text-accent-cyan" />
-                        <span>Preview</span>
-                      </button>
+                      <div className="flex items-center space-x-2 flex-shrink-0 self-end md:self-center">
+                        <button
+                          onClick={() => setPreviewResource(item)}
+                          className="px-3 py-2 rounded-xl neu-button text-xs font-semibold text-slate-300 hover:text-white flex items-center space-x-1.5 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-accent-cyan" />
+                          <span>Preview</span>
+                        </button>
 
-                      <button
-                        onClick={() => handleDeleteResource(item)}
-                        className="px-3.5 py-2 rounded-xl neu-button text-xs font-bold text-red-400 hover:text-white flex items-center space-x-1.5 border border-red-500/30 hover:bg-red-600/30 cursor-pointer"
-                        title="Permanently Purge Resource"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Purge File</span>
-                      </button>
+                        <button
+                          onClick={() => handleDeleteResource(item)}
+                          className="px-3.5 py-2 rounded-xl neu-button text-xs font-bold text-rose-400 hover:text-white flex items-center space-x-1.5 border border-rose-500/30 hover:bg-rose-600/30 cursor-pointer"
+                          title="Permanently Purge Resource"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Purge File</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="p-12 rounded-3xl neu-pressed text-center space-y-2">
                 <FolderOpen className="w-10 h-10 text-slate-500 mx-auto" />
                 <h3 className="text-base font-bold text-white">No Resources Found</h3>
-                <p className="text-xs text-slate-400">No materials match your current search and status filters.</p>
-                {adminSearchQuery && (
+                <p className="text-xs text-slate-400">No materials match your selected campus, branch, year, semester, or search query.</p>
+                {(selectedAdminCollege !== 'ALL' ||
+                  selectedAdminDept !== 'ALL' ||
+                  selectedAdminYear !== 'ALL' ||
+                  selectedAdminSemester !== 'ALL' ||
+                  adminSearchQuery) && (
                   <button
                     onClick={() => {
+                      setSelectedAdminCollege('ALL');
+                      setSelectedAdminDept('ALL');
+                      setSelectedAdminYear('ALL');
+                      setSelectedAdminSemester('ALL');
                       setAdminSearchQuery('');
                       setAdminStatusFilter('ALL');
                     }}
                     className="mt-2 px-3.5 py-1.5 rounded-xl neu-button text-xs font-bold text-brand-300 cursor-pointer"
                   >
-                    Reset Filters
+                    Reset All Filters
                   </button>
                 )}
               </div>

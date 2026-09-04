@@ -113,6 +113,34 @@ export const adminController = {
       });
     }
   },
+
+  // POST /api/v1/admin/resources/bulk-delete
+  async bulkDelete(req, res) {
+    try {
+      const { resourceIds } = req.body;
+      if (!Array.isArray(resourceIds) || resourceIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide an array of resourceIds to clean.',
+        });
+      }
+      const result = await adminService.bulkDeleteResources(
+        resourceIds,
+        req.user.id
+      );
+      return res.status(200).json({
+        success: true,
+        message: `Successfully purged ${result.deletedCount} unwanted files from repository.`,
+        data: result,
+      });
+    } catch (error) {
+      const status = error.status || 500;
+      return res.status(status).json({
+        success: false,
+        message: error.message || 'Bulk delete failed.',
+      });
+    }
+  },
 };
 
 export default adminController;

@@ -213,6 +213,28 @@ export const adminService = {
       resourceId,
     };
   },
+
+  /**
+   * Bulk purge multiple unwanted resources
+   */
+  async bulkDeleteResources(resourceIds, adminUserId) {
+    let deletedCount = 0;
+    const errors = [];
+    for (const id of resourceIds) {
+      try {
+        await this.deleteResource(id, adminUserId);
+        deletedCount++;
+      } catch (err) {
+        errors.push({ id, error: err.message });
+      }
+    }
+    return {
+      success: true,
+      deletedCount,
+      totalRequested: resourceIds.length,
+      errors,
+    };
+  },
 };
 
 export default adminService;

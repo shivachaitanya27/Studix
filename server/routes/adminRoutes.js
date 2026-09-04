@@ -14,6 +14,7 @@ router.get('/moderation/queue', adminController.getModerationQueue);
 router.post('/moderation/:id/approve', adminController.approve);
 router.post('/moderation/:id/reject', adminController.reject);
 router.delete('/resources/:id', adminController.deleteResource);
+router.post('/resources/bulk-delete', adminController.bulkDelete);
 
 
 // AI auto-rejection audit logs
