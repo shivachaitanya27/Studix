@@ -1,0 +1,39 @@
+{
+  "name": "studix-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Studix — AI-Powered Academic Resource Sharing Platform & Admin Operating System",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"cyan.bold,magenta.bold\" \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build:client": "npm --prefix client run build",
+    "build:server": "npm --prefix server run build",
+    "build": "npm run build:client",
+    "make-admin": "node server/scripts/createAdmin.js",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install"
+
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "keywords": [
+    "academic",
+    "resource-sharing",
+    "supabase",
+    "react",
+    "express",
+    "studix"
+  ],
+  "author": "Studix Team",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/ssr": "^0.12.5",
+    "@supabase/supabase-js": "^2.115.0",
+    "pdf-parse": "^2.4.5"
+  }
+}
