@@ -21,53 +21,7 @@ const isKeyConfigured = (key) => {
   return !key.includes('your-openrouter') && key.trim().length > 10;
 };
 
-/**
- * Robust extraction of text from PDF buffers.
- * Uses pdf-parse when available with regex/stream fallback.
- */
-async function extractPdfText(buffer) {
-  try {
-    const { PDFParse } = require('pdf-parse');
-    if (typeof PDFParse === 'function') {
-      const parser = new PDFParse({ data: buffer });
-      if (typeof parser.getText === 'function') {
-        const txt = await parser.getText();
-        if (txt && txt.trim().length > 0) return txt.trim();
-      }
-    }
-  } catch {
-    // pdf-parse error, fallback to stream extraction
-  }
-
-  try {
-    const raw = buffer.toString('latin1');
-    const textBlocks = [];
-    const tjMatches = raw.match(/\((.*?)\)\s*Tj/g);
-    if (tjMatches && tjMatches.length > 0) {
-      for (const m of tjMatches.slice(0, 500)) {
-        const cleaned = m.replace(/\)\s*Tj$/, '').replace(/^\(/, '').trim();
-        if (cleaned.length > 1) textBlocks.push(cleaned);
-      }
-    }
-    const words = raw.match(/[a-zA-Z0-9.,;:?!'\"()\-/\s]{4,}/g);
-    if (words) {
-      const valid = words
-        .filter(
-          (w) =>
-            w.trim().length > 3 &&
-            !w.includes('/Type') &&
-            !w.includes('/Pages') &&
-            !w.includes('/Font') &&
-            !w.includes('/Catalog')
-        )
-        .slice(0, 300);
-      textBlocks.push(...valid);
-    }
-    return textBlocks.join(' ').replace(/\s+/g, ' ').trim();
-  } catch {
-    return '';
-  }
-}
+import { extractPdfText } from '../utils/pdfExtractor.js';
 
 export const openRouterService = {
   /**

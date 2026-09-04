@@ -44,8 +44,10 @@ export const resourceController = {
       });
     } catch (error) {
       const status = error.status || 500;
+      const isDuplicate = Boolean(error.isDuplicate || status === 409);
       return res.status(status).json({
         success: false,
+        isDuplicate,
         message: error.message || 'Failed to upload resource.',
         rejectionReason: error.rejectionReason || null,
         existingResource: error.existingResource || null,

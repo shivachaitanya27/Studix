@@ -24,7 +24,22 @@ export const uploadResource = createAsyncThunk(
       });
       return response.data.data.resource;
     } catch (err) {
-      return rejectWithValue(err.message || 'Upload rejected by moderation system');
+      const errorData = err.response?.data;
+      const message =
+        errorData?.message ||
+        err.message ||
+        'Upload rejected by moderation system';
+      const isDuplicate =
+        Boolean(errorData?.isDuplicate) ||
+        err.response?.status === 409 ||
+        message.toLowerCase().includes('friend') ||
+        message.toLowerCase().includes('already');
+
+      return rejectWithValue({
+        message,
+        isDuplicate,
+        existingResource: errorData?.existingResource || null,
+      });
     }
   }
 );
@@ -140,7 +155,7 @@ const resourceSlice = createSlice({
       })
       .addCase(uploadResource.rejected, (state, action) => {
         state.isUploading = false;
-        state.uploadError = action.payload;
+        state.uploadError = action.payload?.message || (typeof action.payload === 'string' ? action.payload : 'Upload rejected');
       });
 
     // Toggle bookmark

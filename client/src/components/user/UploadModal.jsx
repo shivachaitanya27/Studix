@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Sparkles,
   CheckCircle2,
+  HeartHandshake,
 } from 'lucide-react';
 import { uploadResource, fetchResources } from '../../redux/resourceSlice.js';
 import {
@@ -43,6 +44,24 @@ export const UploadModal = ({ isOpen, onClose }) => {
   const [inspectionStage, setInspectionStage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Dedicated Duplicate Document Notification Popup State
+  const [duplicatePopup, setDuplicatePopup] = useState({
+    isOpen: false,
+    message: '',
+    existingTitle: '',
+  });
+
+  const handleCloseDuplicatePopup = () => {
+    setDuplicatePopup({
+      isOpen: false,
+      message: '',
+      existingTitle: '',
+    });
+    setFile(null);
+    setTitle('');
+    setErrorMessage('');
+  };
 
   const isValidDocFormat = (fileOrName) => {
     if (!fileOrName) return false;
@@ -154,9 +173,27 @@ export const UploadModal = ({ isOpen, onClose }) => {
         onClose();
       }, 1400);
     } else {
-
       setIsProcessing(false);
-      setErrorMessage(result.payload || 'Upload rejected. Please check your document.');
+      const payload = result.payload;
+      const errorMsg =
+        typeof payload === 'string'
+          ? payload
+          : (payload?.message || 'Upload rejected. Please check your document.');
+      const isDup =
+        payload?.isDuplicate ||
+        errorMsg.toLowerCase().includes('friend') ||
+        errorMsg.toLowerCase().includes('helping') ||
+        errorMsg.toLowerCase().includes('already');
+
+      if (isDup) {
+        setDuplicatePopup({
+          isOpen: true,
+          message: errorMsg,
+          existingTitle: payload?.existingResource?.title || '',
+        });
+      } else {
+        setErrorMessage(errorMsg);
+      }
     }
   };
 
@@ -371,6 +408,69 @@ export const UploadModal = ({ isOpen, onClose }) => {
             )}
           </button>
         </form>
+
+        {/* Duplicate Document Popup Notification */}
+        <AnimatePresence>
+          {duplicatePopup.isOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="relative max-w-md w-full rounded-3xl neu-flat p-6 sm:p-7 text-center border border-amber-500/30 shadow-2xl overflow-hidden"
+              >
+                {/* Ambient glow behind badge */}
+                <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-48 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+
+                {/* Animated Badge */}
+                <div className="relative mx-auto w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500/20 via-brand-500/20 to-accent-emerald/20 border border-amber-400/40 flex items-center justify-center mb-4 shadow-glow">
+                  <HeartHandshake className="w-8 h-8 text-amber-400 animate-pulse" />
+                  <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-400 text-slate-900 flex items-center justify-center text-[10px] font-black">
+                    !
+                  </div>
+                </div>
+
+                <h3 className="text-lg sm:text-xl font-extrabold text-white mb-2 flex items-center justify-center gap-2">
+                  <span>Peer Contribution Detected</span>
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                </h3>
+
+                {/* User's Exact Requested Notification Message */}
+                <div className="my-4 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200">
+                  <p className="text-sm font-bold leading-relaxed">
+                    &ldquo;{duplicatePopup.message || "Thanks fors Helping to Your friends,but Your friend is already this ,be frist next time than your friend"}&rdquo;
+                  </p>
+                </div>
+
+                {duplicatePopup.existingTitle && (
+                  <p className="text-xs text-slate-400 mb-4 truncate px-2">
+                    Already in repository as:{' '}
+                    <span className="text-slate-200 font-semibold">
+                      &quot;{duplicatePopup.existingTitle}&quot;
+                    </span>
+                  </p>
+                )}
+
+                <p className="text-[11px] text-slate-400 leading-relaxed mb-6">
+                  Your willingness to help classmates is awesome! Another student already uploaded this exact document to the repository. Look for other question papers or notes and be the first to upload next time!
+                </p>
+
+                <button
+                  type="button"
+                  onClick={handleCloseDuplicatePopup}
+                  className="w-full py-3.5 px-4 rounded-xl neu-button text-amber-300 hover:text-white font-bold text-xs shadow-glow transition-all flex items-center justify-center space-x-2"
+                >
+                  <span>Understood, I&apos;ll Be First Next Time!</span>
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );

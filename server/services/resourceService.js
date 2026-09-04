@@ -53,18 +53,19 @@ export const resourceService = {
       throw err;
     }
 
-    // 1. Calculate SHA-256 hash & enforce duplicate rejection
+    // 1. Calculate SHA-256 hash & enforce duplicate rejection (cryptographic hash + PDF content analysis)
     const fileHash = duplicateDetectionService.calculateHash(file.buffer);
-    const { isDuplicate, existingResource } =
-      await duplicateDetectionService.checkDuplicate(fileHash);
+    const initialCheck = await duplicateDetectionService.checkDuplicate({
+      fileHash,
+      buffer: file.buffer,
+    });
 
-
-    if (isDuplicate) {
-      const err = new Error(
-        `Duplicate file detected! This document has already been uploaded as "${existingResource.title}".`
-      );
+    if (initialCheck.isDuplicate) {
+      const err = new Error(duplicateDetectionService.DUPLICATE_MESSAGE);
       err.status = 409;
-      err.existingResource = existingResource;
+      err.isDuplicate = true;
+      err.existingResource = initialCheck.existingResource;
+      err.duplicateReason = initialCheck.reason;
       throw err;
     }
 
@@ -75,6 +76,23 @@ export const resourceService = {
       mimetype: file.mimetype,
       resourceType,
     });
+
+    // 2b. Secondary duplicate check with enriched extracted text
+    if (inspection.extractedText) {
+      const textCheck = await duplicateDetectionService.checkDuplicate({
+        fileHash,
+        extractedText: inspection.extractedText,
+      });
+
+      if (textCheck.isDuplicate) {
+        const err = new Error(duplicateDetectionService.DUPLICATE_MESSAGE);
+        err.status = 409;
+        err.isDuplicate = true;
+        err.existingResource = textCheck.existingResource;
+        err.duplicateReason = textCheck.reason;
+        throw err;
+      }
+    }
 
     // 3. Reject non-academic files immediately
     if (!inspection.isApproved) {
