@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useDispatch } from 'react-redux';
 import {
   X,
@@ -252,26 +253,48 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
     setTimeout(() => setSettingsSavedToast(false), 2500);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md animate-fade-in flex items-center justify-center p-3 sm:p-5">
+  const handleSaveCurrentTab = (e) => {
+    if (activeTab === 'stream') {
+      handleUpdateStream(e);
+    } else if (activeTab === 'security') {
+      handleChangePassword(e);
+    } else {
+      handleSavePreferences();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999999] overflow-y-auto bg-black/85 backdrop-blur-md animate-fade-in flex items-center justify-center p-3 sm:p-5">
       <div
         className="fixed inset-0"
         onClick={onClose}
       />
 
       <div className="relative w-full max-w-xl my-auto bg-white dark:bg-[#131722] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl z-10 max-h-[82vh] sm:max-h-[85vh] flex flex-col overflow-hidden transition-colors">
-        {/* Modal Header - Fixed at Top */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 bg-white dark:bg-[#131722]">
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-brand-500/10 dark:bg-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400">
-              <GraduationCap className="w-5 h-5" />
+        {/* Modal Header - Fixed at Top with Back & Close */}
+        <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 bg-white dark:bg-[#131722]">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              id="settings-header-back-btn"
+              className="py-1.5 px-2.5 rounded-xl neu-button text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer flex items-center space-x-1 font-bold text-xs active:scale-95"
+              title="Go Back"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back</span>
+            </button>
+            <div className="w-8 h-8 rounded-xl bg-brand-500/10 dark:bg-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400">
+              <GraduationCap className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight">
+              <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white tracking-tight leading-tight">
                 Account & Academic Settings
               </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[220px] sm:max-w-none">
-                Academic stream progression, security & preferences
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[160px] sm:max-w-none">
+                Academic stream, security & preferences
               </p>
             </div>
           </div>
@@ -553,7 +576,7 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
                 className="py-3 px-4 rounded-xl neu-button text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-bold transition-all flex items-center justify-center space-x-1"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Close</span>
+                <span>Back</span>
               </button>
 
               <button
@@ -885,9 +908,47 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
           </div>
         )}
         </div>
+
+        {/* Modal Footer - Fixed at Bottom with Back and Save Buttons */}
+        <div className="flex items-center space-x-3 p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 flex-shrink-0 bg-slate-50/95 dark:bg-[#111522]/95 backdrop-blur-md">
+          <button
+            type="button"
+            onClick={onClose}
+            id="settings-modal-footer-back-btn"
+            className="py-2.5 px-4 rounded-xl neu-button text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSaveCurrentTab}
+            disabled={streamLoading || passwordLoading}
+            id="settings-modal-footer-save-btn"
+            className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-accent-violet hover:from-brand-500 hover:to-accent-violet text-white text-xs font-black shadow-glow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-[0.98] cursor-pointer"
+          >
+            {streamLoading || passwordLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4 text-white" />
+                <span>Save</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(modalContent, document.body);
+  }
+  return modalContent;
 };
 
 export default SettingsModal;
