@@ -13,7 +13,7 @@ const openRouterKey = process.env.OPENROUTER_API_KEY || '';
 const openRouterBaseUrl =
   process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 const geminiModel =
-  process.env.OPENROUTER_GEMINI_MODEL || 'google/gemini-2.0-flash-001';
+  process.env.OPENROUTER_GEMINI_MODEL || 'google/gemini-2.5-flash';
 
 export const ragService = {
   /**

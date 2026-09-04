@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -107,8 +108,8 @@ export const Navbar = () => {
   const hasAcademicContext = Boolean(college && department && year && semester);
 
   return (
-    <header className="sticky top-0 z-40 w-full neu-flat backdrop-blur-md transition-colors border-b border-dark-border/40 shadow-sm">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-20 sm:h-22 flex items-center justify-between">
+    <header className="sticky top-0 z-40 w-full bg-white/95 dark:bg-[#111625]/95 backdrop-blur-md transition-colors border-b border-slate-200/80 dark:border-slate-800/80 shadow-sm">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
         {/* Left: Brand Logo & Title */}
         <div className="flex items-center space-x-3 sm:space-x-6">
           <Link to="/dashboard" className="flex items-center space-x-2.5 sm:space-x-3.5 group">
@@ -455,7 +456,7 @@ export const Navbar = () => {
           type="button"
           onClick={() => setIsMobileDrawerOpen(true)}
           id="mobile-top-nav-drawer-btn"
-          className="flex md:hidden items-center space-x-2.5 px-3 py-2 rounded-2xl neu-button border border-brand-500/40 text-slate-200 hover:text-brand-300 shadow-md transition-all cursor-pointer group"
+          className="flex md:hidden items-center space-x-2 px-3 py-1.5 rounded-2xl neu-button border border-brand-500/40 text-slate-800 dark:text-slate-100 hover:text-brand-500 dark:hover:text-brand-300 shadow-md transition-all cursor-pointer group"
           title="Open Navigation Menu"
         >
           <div className="relative w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center neu-pressed border border-brand-500/30">
@@ -472,253 +473,262 @@ export const Navbar = () => {
             )}
           </div>
           <div className="flex flex-col text-left mr-0.5">
-            <span className="text-[11px] font-black text-slate-200 leading-none">Menu</span>
-            <span className="text-[8px] font-extrabold text-brand-400 uppercase tracking-wider">Studix</span>
+            <span className="text-[11px] font-black text-slate-800 dark:text-slate-100 leading-none">Menu</span>
+            <span className="text-[8px] font-extrabold text-brand-600 dark:text-brand-400 uppercase tracking-wider">Studix</span>
           </div>
-          <Menu className="w-4 h-4 text-brand-400 group-hover:scale-110 transition-transform" />
+          <Menu className="w-4 h-4 text-brand-500 dark:text-brand-400 group-hover:scale-110 transition-transform" />
         </button>
+      </div>
 
-        {/* Right-Side Mobile Navigation Slide-Over Drawer */}
-        {isMobileDrawerOpen && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm animate-fade-in md:hidden"
-              onClick={() => setIsMobileDrawerOpen(false)}
-            />
+      {/* Right-Side Mobile Navigation Slide-Over Drawer - Portaled directly to body to avoid header containing-block trap */}
+      {typeof document !== 'undefined' && isMobileDrawerOpen && createPortal(
+        <div className="fixed inset-0 z-[99999] md:hidden">
+          {/* Full Screen Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm animate-fade-in"
+            onClick={() => setIsMobileDrawerOpen(false)}
+          />
 
-            {/* Slide Drawer from Right */}
-            <div className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm z-50 neu-flat bg-dark-card dark:bg-[#111625] bg-white text-slate-100 p-5 flex flex-col justify-between overflow-y-auto shadow-2xl border-l border-dark-border animate-slide-left md:hidden space-y-4">
-              <div className="space-y-4">
-                {/* Drawer Header */}
-                <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 rounded-xl neu-button text-brand-400 flex items-center justify-center">
-                      <GraduationCap className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="text-sm font-black text-slate-900 dark:text-white tracking-tight">STUDIX</span>
-                      <span className="block text-[9px] text-brand-400 font-bold uppercase">Navigation Menu</span>
-                    </div>
+          {/* Full Height Drawer from Right with safe padding */}
+          <div className="fixed inset-y-0 right-0 w-[86%] max-w-sm bg-white dark:bg-[#111625] text-slate-900 dark:text-slate-100 pt-7 pb-8 px-4 flex flex-col justify-between overflow-y-auto shadow-2xl border-l border-slate-200 dark:border-slate-800 animate-slide-left z-[100000] space-y-4">
+            <div className="space-y-4">
+              {/* Drawer Header - safe from notch & browser address bar */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 pt-1">
+                <div className="flex items-center space-x-2.5">
+                  <div className="w-9 h-9 rounded-xl neu-button text-brand-500 dark:text-brand-400 flex items-center justify-center border border-brand-500/20">
+                    <GraduationCap className="w-5 h-5" />
                   </div>
+                  <div>
+                    <span className="text-base font-black text-slate-900 dark:text-white tracking-tight">STUDIX</span>
+                    <span className="block text-[10px] text-brand-600 dark:text-brand-400 font-bold uppercase tracking-wider">Navigation Menu</span>
+                  </div>
+                </div>
 
+                <button
+                  type="button"
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  id="mobile-drawer-close-btn"
+                  className="p-2 rounded-xl neu-button text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Profile Header in Drawer */}
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex items-center space-x-3">
+                <div
+                  onClick={() => {
+                    avatarInputRef.current?.click();
+                  }}
+                  className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 neu-button cursor-pointer border border-brand-500/30"
+                  title="Change profile photo"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-tr from-brand-600 to-accent-violet flex items-center justify-center text-white font-black text-sm">
+                    {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
+                  </div>
+                  {(avatarPreview || user?.avatar_url) && (
+                    <img
+                      src={avatarPreview || user?.avatar_url}
+                      alt={user?.full_name || 'Profile'}
+                      className="relative z-10 w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition-opacity">
+                    <Camera className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                    {user?.full_name || 'Student'}
+                  </h4>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
+                  <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-brand-500/10 dark:bg-brand-500/20 text-brand-600 dark:text-brand-300 border border-brand-500/20">
+                    {user?.role === 'ADMIN' ? 'Admin Access' : 'Verified Campus Student'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Academic Stream & Change Semester Card */}
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Campus Stream</span>
+                  <span className="text-[10px] font-bold text-accent-emerald flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent-emerald animate-pulse" />
+                    Enrolled
+                  </span>
+                </div>
+                <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                  {college?.name || college?.code || 'University'}
+                </p>
+                <p className="text-[11px] text-brand-600 dark:text-brand-400 font-semibold truncate">
+                  {department?.name || department?.code || 'Academic Branch'}
+                </p>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                    Year {year || 1} • Sem {semester || 1}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => setIsMobileDrawerOpen(false)}
-                    id="mobile-drawer-close-btn"
-                    className="p-2 rounded-xl neu-button text-slate-400 hover:text-white"
+                    onClick={() => {
+                      setIsMobileDrawerOpen(false);
+                      setSettingsInitialTab('stream');
+                      setIsSettingsOpen(true);
+                    }}
+                    className="px-2.5 py-1 rounded-lg neu-button text-[10px] font-bold text-amber-600 dark:text-amber-300 flex items-center space-x-1 border border-amber-500/30 hover:bg-amber-500/10 cursor-pointer"
                   >
-                    <X className="w-4 h-4" />
+                    <Pencil className="w-2.5 h-2.5" />
+                    <span>Change Semester</span>
                   </button>
                 </div>
-
-                {/* Profile Header in Drawer */}
-                <div className="p-3 rounded-2xl neu-pressed flex items-center space-x-3">
-                  <div
-                    onClick={() => {
-                      avatarInputRef.current?.click();
-                    }}
-                    className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 neu-button cursor-pointer border border-brand-500/30"
-                    title="Change profile photo"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-tr from-brand-600 to-accent-violet flex items-center justify-center text-white font-black text-sm">
-                      {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
-                    </div>
-                    {(avatarPreview || user?.avatar_url) && (
-                      <img
-                        src={avatarPreview || user?.avatar_url}
-                        alt={user?.full_name || 'Profile'}
-                        className="relative z-10 w-full h-full object-cover"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition-opacity">
-                      <Camera className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                      {user?.full_name || 'Student'}
-                    </h4>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
-                    <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-brand-500/20 text-brand-300">
-                      {user?.role === 'ADMIN' ? 'Admin Access' : 'Verified Campus Student'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Academic Stream & Change Semester Card */}
-                <div className="p-3 rounded-2xl neu-pressed space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Campus Stream</span>
-                    <span className="text-[10px] font-bold text-accent-emerald flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-accent-emerald animate-pulse" />
-                      Enrolled
-                    </span>
-                  </div>
-                  <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
-                    {college?.name || college?.code || 'University'}
-                  </p>
-                  <p className="text-[11px] text-brand-400 font-semibold truncate">
-                    {department?.name || department?.code || 'Academic Branch'}
-                  </p>
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                      Year {year || 1} • Sem {semester || 1}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsMobileDrawerOpen(false);
-                        setSettingsInitialTab('stream');
-                        setIsSettingsOpen(true);
-                      }}
-                      className="px-2.5 py-1 rounded-lg neu-button text-[10px] font-bold text-amber-300 flex items-center space-x-1 border border-amber-500/30 hover:bg-amber-500/10 cursor-pointer"
-                    >
-                      <Pencil className="w-2.5 h-2.5" />
-                      <span>Change Semester</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Navigation Links in Drawer */}
-                <div className="space-y-1.5">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Pages</p>
-                  <Link
-                    to="/dashboard"
-                    onClick={() => setIsMobileDrawerOpen(false)}
-                    className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-2.5 ${
-                      location.pathname === '/dashboard' ? 'neu-tab-active text-brand-300' : 'neu-button text-slate-300'
-                    }`}
-                  >
-                    <LayoutDashboard className="w-4 h-4 text-brand-400" />
-                    <span>Dashboard</span>
-                  </Link>
-                  <Link
-                    to="/repository"
-                    onClick={() => setIsMobileDrawerOpen(false)}
-                    className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-2.5 ${
-                      location.pathname === '/repository' ? 'neu-tab-active text-brand-300' : 'neu-button text-slate-300'
-                    }`}
-                  >
-                    <FolderArchive className="w-4 h-4 text-brand-400" />
-                    <span>Academic Repository</span>
-                  </Link>
-                  <Link
-                    to="/ai-assistant"
-                    onClick={() => setIsMobileDrawerOpen(false)}
-                    className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-2.5 ${
-                      location.pathname === '/ai-assistant' ? 'neu-tab-active text-amber-300' : 'neu-button text-slate-300'
-                    }`}
-                  >
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span>AI Exam Solver</span>
-                  </Link>
-                  {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') &&
-                    (user?.email || '').toLowerCase().trim() === 'vshivachaitanya7@gmail.com' && (
-                      <Link
-                        to="/admin"
-                        onClick={() => setIsMobileDrawerOpen(false)}
-                        className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-2.5 ${
-                          location.pathname === '/admin' ? 'neu-tab-active text-purple-300' : 'neu-button text-purple-400'
-                        }`}
-                      >
-                        <ShieldCheck className="w-4 h-4 text-purple-400" />
-                        <span>Admin Panel</span>
-                      </Link>
-                    )}
-                </div>
-
-                {/* Multilingual & Theme Controls in Drawer */}
-                <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1.5">
-                      <Globe className="w-3 h-3 text-accent-cyan" />
-                      <span>Language</span>
-                    </p>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[
-                        { code: 'en', label: 'English' },
-                        { code: 'te', label: 'తెలుగు' },
-                        { code: 'ta', label: 'தமிழ்' },
-                      ].map((lng) => {
-                        const isSelected = i18n.language === lng.code;
-                        return (
-                          <button
-                            key={lng.code}
-                            type="button"
-                            onClick={() => i18n.changeLanguage(lng.code)}
-                            className={`py-1.5 px-2 rounded-xl text-[11px] font-bold text-center transition-all cursor-pointer ${
-                              isSelected
-                                ? 'neu-pressed text-brand-300 border border-brand-500/40 font-black'
-                                : 'neu-button text-slate-400'
-                            }`}
-                          >
-                            {lng.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1.5">
-                      <Palette className="w-3 h-3 text-brand-400" />
-                      <span>Theme & Colors</span>
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {THEMES.map((th) => (
-                        <button
-                          key={th.id}
-                          type="button"
-                          onClick={() => {
-                            const isLight = th.id === 'neu-soft-minimal';
-                            document.documentElement.className = isLight ? 'neu-soft-minimal light' : `${th.id} dark`;
-                            localStorage.setItem('studix_theme', th.id);
-                          }}
-                          className="py-1.5 px-2.5 rounded-xl neu-button text-[11px] font-bold text-slate-300 flex items-center space-x-2 cursor-pointer"
-                        >
-                          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: th.color }} />
-                          <span className="truncate">{th.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
               </div>
 
-              {/* Account Settings & Logout in Drawer */}
-              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2 mt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMobileDrawerOpen(false);
-                    setSettingsInitialTab('security');
-                    setIsSettingsOpen(true);
-                  }}
-                  className="w-full py-2.5 px-3 rounded-xl neu-button text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-white flex items-center justify-center space-x-2 cursor-pointer"
+              {/* Navigation Links in Drawer */}
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">Pages</p>
+                <Link
+                  to="/dashboard"
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2.5 transition-all ${
+                    location.pathname === '/dashboard'
+                      ? 'neu-tab-active text-brand-600 dark:text-brand-300 font-black'
+                      : 'neu-button text-slate-700 dark:text-slate-200 hover:text-brand-600 dark:hover:text-white'
+                  }`}
                 >
-                  <Settings className="w-4 h-4 text-brand-400" />
-                  <span>Password & Settings</span>
-                </button>
+                  <LayoutDashboard className="w-4 h-4 text-brand-500 dark:text-brand-400" />
+                  <span>Dashboard</span>
+                </Link>
+                <Link
+                  to="/repository"
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2.5 transition-all ${
+                    location.pathname === '/repository'
+                      ? 'neu-tab-active text-brand-600 dark:text-brand-300 font-black'
+                      : 'neu-button text-slate-700 dark:text-slate-200 hover:text-brand-600 dark:hover:text-white'
+                  }`}
+                >
+                  <FolderArchive className="w-4 h-4 text-brand-500 dark:text-brand-400" />
+                  <span>Academic Repository</span>
+                </Link>
+                <Link
+                  to="/ai-assistant"
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2.5 transition-all ${
+                    location.pathname === '/ai-assistant'
+                      ? 'neu-tab-active text-amber-600 dark:text-amber-300 font-black'
+                      : 'neu-button text-slate-700 dark:text-slate-200 hover:text-amber-500 dark:hover:text-white'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                  <span>AI Exam Solver</span>
+                </Link>
+                {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') &&
+                  (user?.email || '').toLowerCase().trim() === 'vshivachaitanya7@gmail.com' && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setIsMobileDrawerOpen(false)}
+                      className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2.5 transition-all ${
+                        location.pathname === '/admin'
+                          ? 'neu-tab-active text-purple-600 dark:text-purple-300 font-black'
+                          : 'neu-button text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-white'
+                      }`}
+                    >
+                      <ShieldCheck className="w-4 h-4 text-purple-500" />
+                      <span>Admin Panel</span>
+                    </Link>
+                  )}
+              </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMobileDrawerOpen(false);
-                    setShowLogoutConfirm(true);
-                  }}
-                  className="w-full py-2.5 px-3 rounded-xl neu-button text-xs font-bold text-rose-500 hover:bg-rose-500/10 flex items-center justify-center space-x-2 border border-rose-500/30 cursor-pointer"
-                >
-                  <LogOut className="w-4 h-4 text-rose-500" />
-                  <span>Log Out</span>
-                </button>
+              {/* Multilingual & Theme Controls in Drawer */}
+              <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-accent-cyan" />
+                    <span>Language</span>
+                  </p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { code: 'en', label: 'English' },
+                      { code: 'te', label: 'తెలుగు' },
+                      { code: 'ta', label: 'தமிழ்' },
+                    ].map((lng) => {
+                      const isSelected = i18n.language === lng.code;
+                      return (
+                        <button
+                          key={lng.code}
+                          type="button"
+                          onClick={() => i18n.changeLanguage(lng.code)}
+                          className={`py-1.5 px-2 rounded-xl text-[11px] font-bold text-center transition-all cursor-pointer ${
+                            isSelected
+                              ? 'neu-pressed text-brand-600 dark:text-brand-300 border border-brand-500/40 font-black'
+                              : 'neu-button text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          {lng.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
+                    <Palette className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400" />
+                    <span>Theme & Colors</span>
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {THEMES.map((th) => (
+                      <button
+                        key={th.id}
+                        type="button"
+                        onClick={() => {
+                          const isLight = th.id === 'neu-soft-minimal';
+                          document.documentElement.className = isLight ? 'neu-soft-minimal light' : `${th.id} dark`;
+                          localStorage.setItem('studix_theme', th.id);
+                        }}
+                        className="py-1.5 px-2.5 rounded-xl neu-button text-[11px] font-bold text-slate-700 dark:text-slate-200 flex items-center space-x-2 cursor-pointer"
+                      >
+                        <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: th.color }} />
+                        <span className="truncate">{th.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-          </>
-        )}
-      </div>
+
+            {/* Account Settings & Logout in Drawer */}
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2 mt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileDrawerOpen(false);
+                  setSettingsInitialTab('security');
+                  setIsSettingsOpen(true);
+                }}
+                className="w-full py-2.5 px-3 rounded-xl neu-button text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-brand-500 dark:hover:text-white flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <Settings className="w-4 h-4 text-brand-500 dark:text-brand-400" />
+                <span>Password & Settings</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileDrawerOpen(false);
+                  setShowLogoutConfirm(true);
+                }}
+                className="w-full py-2.5 px-3 rounded-xl neu-button text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 flex items-center justify-center space-x-2 border border-rose-500/30 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 text-rose-500" />
+                <span>Log Out</span>
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Account & App Settings Modal */}
       <SettingsModal
@@ -728,14 +738,14 @@ export const Navbar = () => {
         initialTab={settingsInitialTab}
       />
 
-      {/* Logout Confirmation Permission Modal */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+      {/* Logout Confirmation Modal - Portaled to body */}
+      {typeof document !== 'undefined' && showLogoutConfirm && createPortal(
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
           <div
             className="fixed inset-0"
             onClick={() => setShowLogoutConfirm(false)}
           />
-          <div className="relative w-full max-w-sm rounded-3xl neu-flat bg-white dark:bg-[#151926] p-6 z-10 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800 text-center">
+          <div className="relative w-full max-w-sm rounded-3xl bg-white dark:bg-[#151926] p-6 z-10 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800 text-center">
             <div className="w-14 h-14 rounded-2xl mx-auto neu-button flex items-center justify-center text-rose-500 border border-rose-500/30 bg-rose-500/10">
               <LogOut className="w-7 h-7" />
             </div>
@@ -766,7 +776,8 @@ export const Navbar = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Profile Photo Toast Notification */}

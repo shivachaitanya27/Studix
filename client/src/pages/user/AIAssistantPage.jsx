@@ -230,20 +230,20 @@ export const AIAssistantPage = () => {
     };
 
     if (!activeSessionId) {
+      const tempId = `session_${Date.now()}`;
       dispatch(
         createAiSession({
           title: (promptText || attachedFile?.name || 'Exam Paper Query').slice(0, 30) + '...',
           subjectId: subjects[0]?.id || null,
         })
       ).then((res) => {
-        if (res.payload?.id) {
-          dispatch(
-            sendAiMessage({
-              sessionId: res.payload.id,
-              ...payload,
-            })
-          );
-        }
+        const targetSessionId = res.payload?.id || tempId;
+        dispatch(
+          sendAiMessage({
+            sessionId: targetSessionId,
+            ...payload,
+          })
+        );
       });
     } else {
       dispatch(
@@ -508,21 +508,32 @@ export const AIAssistantPage = () => {
                   <div
                     className={`max-w-[94%] sm:max-w-[88%] p-4 sm:p-5 rounded-2xl text-xs leading-relaxed ${
                       isUser
-                        ? 'neu-button text-white font-medium'
-                        : 'neu-pressed text-slate-200 whitespace-pre-wrap'
+                        ? 'neu-button text-slate-900 dark:text-white font-medium border border-brand-500/40 bg-white dark:bg-[#191f2e]'
+                        : 'neu-pressed text-slate-800 dark:text-slate-200'
                     }`}
                   >
                     {!isUser && (
-                      <div className="flex items-center justify-between space-x-1.5 text-brand-400 font-bold mb-1.5 text-[10px] uppercase">
+                      <div className="flex items-center justify-between space-x-1.5 text-brand-500 dark:text-brand-400 font-bold mb-2 text-[10px] uppercase">
                         <div className="flex items-center space-x-1.5">
-                          <Sparkles className="w-3 h-3" />
-                          <span>Gemini 2.5 Flash Assistant</span>
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Gemini 2.5 Flash Vision</span>
                         </div>
                         <TextToSpeechButton text={m.message} />
                       </div>
                     )}
                     {isUser ? (
-                      <div className="whitespace-pre-wrap">{m.message}</div>
+                      <div className="space-y-2">
+                        {m.imageUrl && (
+                          <div className="rounded-xl overflow-hidden border border-brand-500/30 max-w-[260px] shadow-md">
+                            <img
+                              src={m.imageUrl}
+                              alt="Attached Exam Question / Diagram"
+                              className="w-full h-auto object-cover max-h-60"
+                            />
+                          </div>
+                        )}
+                        <div className="whitespace-pre-wrap">{m.message}</div>
+                      </div>
                     ) : (
                       <MarkdownMessage content={m.message} />
                     )}
