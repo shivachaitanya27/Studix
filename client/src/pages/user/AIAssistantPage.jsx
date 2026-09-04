@@ -28,6 +28,7 @@ import {
 import {
   fetchAiSessions,
   createAiSession,
+  deleteAiSession,
   fetchSessionMessages,
   sendAiMessage,
   searchRepositoryRag,
@@ -40,6 +41,7 @@ import {
   selectIsSearching,
   selectIsSending,
 } from '../../redux/aiSlice.js';
+import { selectCurrentUser } from '../../redux/authSlice.js';
 import {
   selectSelectedCollege,
   selectSelectedDepartment,
@@ -59,6 +61,7 @@ export const AIAssistantPage = () => {
   const dispatch = useDispatch();
   const messagesEndRef = useRef(null);
 
+  const user = useSelector(selectCurrentUser);
   const college = useSelector(selectSelectedCollege);
   const department = useSelector(selectSelectedDepartment);
   const year = useSelector(selectSelectedYear);
@@ -80,10 +83,12 @@ export const AIAssistantPage = () => {
   const [showMobileSessions, setShowMobileSessions] = useState(false);
   const fileInputRef = useRef(null);
 
-  // 1. Fetch user's private sessions on mount
+  // 1. Fetch user's private sessions on mount and whenever user changes
   useEffect(() => {
-    dispatch(fetchAiSessions());
-  }, [dispatch]);
+    if (user?.id) {
+      dispatch(fetchAiSessions());
+    }
+  }, [dispatch, user?.id]);
 
   // 2. Fetch messages whenever activeSessionId changes
   useEffect(() => {
@@ -96,6 +101,13 @@ export const AIAssistantPage = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isSending]);
+
+  const handleDeleteSession = (e, sessionId) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this chat session?')) {
+      dispatch(deleteAiSession(sessionId));
+    }
+  };
 
   const handleCreateNewChat = () => {
     dispatch(
@@ -439,18 +451,28 @@ export const AIAssistantPage = () => {
               {sessions.map((sess) => {
                 const isActive = activeSessionId === sess.id;
                 return (
-                  <button
+                  <div
                     key={sess.id}
                     onClick={() => dispatch(setActiveSessionId(sess.id))}
-                    className={`w-full p-2.5 rounded-xl text-left text-xs transition-all flex items-center space-x-2.5 ${
+                    className={`group w-full p-2.5 rounded-xl text-left text-xs transition-all flex items-center justify-between cursor-pointer ${
                       isActive
                         ? 'neu-tab-active text-white font-bold'
                         : 'neu-button text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 text-brand-400" />
-                    <span className="truncate">{sess.title}</span>
-                  </button>
+                    <div className="flex items-center space-x-2.5 min-w-0 flex-1 mr-1">
+                      <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 text-brand-400" />
+                      <span className="truncate">{sess.title}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteSession(e, sess.id)}
+                      className="opacity-0 group-hover:opacity-100 sm:opacity-0 focus:opacity-100 p-1 hover:text-rose-400 text-slate-500 rounded transition-opacity"
+                      title="Delete chat session"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 );
               })}
 

@@ -2,19 +2,54 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../services/api.js';
 import { aiDirectService } from '../services/aiDirectService.js';
 
-// Local storage helpers for client-side chat caching
-const STORAGE_SESSIONS_KEY = 'studix_ai_sessions_cache';
-const getCachedSessions = () => {
+// Immediately purge legacy global un-scoped session cache to avoid data leakage
+try {
+  localStorage.removeItem('studix_ai_sessions_cache');
+} catch (e) {
+  // ignore
+}
+
+// User-scoped Local Storage helpers: ensures 100% private isolation per user ID
+const getUserSessionsKey = (userId) => `studix_ai_sessions_${userId || 'anonymous'}`;
+const getUserMessagesKey = (userId, sessionId) =>
+  `studix_ai_msgs_${userId || 'anonymous'}_${sessionId}`;
+
+const getCachedUserSessions = (userId) => {
+  if (!userId) return [];
   try {
-    const raw = localStorage.getItem(STORAGE_SESSIONS_KEY);
+    const raw = localStorage.getItem(getUserSessionsKey(userId));
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 };
-const saveCachedSessions = (sessions) => {
+
+const saveCachedUserSessions = (userId, sessions) => {
+  if (!userId) return;
   try {
-    localStorage.setItem(STORAGE_SESSIONS_KEY, JSON.stringify(sessions.slice(0, 20)));
+    localStorage.setItem(getUserSessionsKey(userId), JSON.stringify(sessions.slice(0, 30)));
+  } catch {
+    // ignore
+  }
+};
+
+const getCachedUserMessages = (userId, sessionId) => {
+  if (!userId || !sessionId) return [];
+  try {
+    const raw = localStorage.getItem(getUserMessagesKey(userId, sessionId));
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveCachedUserMessages = (userId, sessionId, messages) => {
+  if (!userId || !sessionId) return;
+  try {
+    localStorage.setItem(
+      getUserMessagesKey(userId, sessionId),
+      JSON.stringify(messages.slice(-50))
+    );
   } catch {
     // ignore
   }
@@ -33,7 +68,6 @@ export const searchRepositoryRag = createAsyncThunk(
       });
       return response.data.data;
     } catch (err) {
-      // Client-side fallback response if backend endpoint unavailable
       try {
         const answer = await aiDirectService.callGeminiVision({
           prompt: `University Repository Search Query: "${query}". Provide verified exam concepts, scoring tips, and step-by-step notes.`,
@@ -119,37 +153,36 @@ export const solvePaperQuestion = createAsyncThunk(
   }
 );
 
-// 4. AI Sessions & Messaging
+// 4. AI Sessions & Messaging (Strictly User Isolated)
 export const fetchAiSessions = createAsyncThunk(
   'ai/fetchAiSessions',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
+    const userId = getState()?.auth?.user?.id;
     try {
       const response = await api.get('/ai/sessions');
-      if (Array.isArray(response.data?.data) && response.data.data.length > 0) {
-        saveCachedSessions(response.data.data);
+      if (Array.isArray(response.data?.data)) {
+        if (userId) saveCachedUserSessions(userId, response.data.data);
         return response.data.data;
       }
     } catch (err) {
-      console.warn('Backend /ai/sessions fetch failed, reading cached sessions:', err?.message);
+      console.warn('Backend /ai/sessions fetch failed, reading user-scoped cache:', err?.message);
     }
-    const cached = getCachedSessions();
-    if (cached.length > 0) return cached;
-    // Default initial session
-    const defaultSession = {
-      id: `session_${Date.now()}`,
-      title: 'Exam Solver & Concept Revision',
-      created_at: new Date().toISOString(),
-    };
-    saveCachedSessions([defaultSession]);
-    return [defaultSession];
+    // Only return cached sessions belonging strictly to the current authenticated user
+    if (userId) {
+      const cached = getCachedUserSessions(userId);
+      if (cached.length > 0) return cached;
+    }
+    return [];
   }
 );
 
 export const createAiSession = createAsyncThunk(
   'ai/createAiSession',
-  async ({ title, subjectId }, { rejectWithValue }) => {
+  async ({ title, subjectId }, { rejectWithValue, getState }) => {
+    const userId = getState()?.auth?.user?.id;
     const localSession = {
       id: `session_${Date.now()}`,
+      user_id: userId,
       title: title || 'New AI Exam Session',
       subject_id: subjectId || null,
       created_at: new Date().toISOString(),
@@ -157,25 +190,37 @@ export const createAiSession = createAsyncThunk(
     try {
       const response = await api.post('/ai/sessions', { title, subjectId });
       if (response.data?.data) {
+        if (userId) {
+          const current = getCachedUserSessions(userId);
+          saveCachedUserSessions(userId, [response.data.data, ...current]);
+        }
         return response.data.data;
       }
     } catch (err) {
-      console.warn('Backend createAiSession failed, creating local session:', err?.message);
+      console.warn('Backend createAiSession failed, creating local user session:', err?.message);
     }
-    const current = getCachedSessions();
-    saveCachedSessions([localSession, ...current]);
+    if (userId) {
+      const current = getCachedUserSessions(userId);
+      saveCachedUserSessions(userId, [localSession, ...current]);
+    }
     return localSession;
   }
 );
 
 export const fetchSessionMessages = createAsyncThunk(
   'ai/fetchSessionMessages',
-  async (sessionId, { rejectWithValue }) => {
+  async (sessionId, { rejectWithValue, getState }) => {
+    const userId = getState()?.auth?.user?.id;
     try {
       const response = await api.get(`/ai/sessions/${sessionId}`);
-      return { sessionId, messages: response.data.data || [] };
+      const msgs = response.data?.data || [];
+      if (userId) saveCachedUserMessages(userId, sessionId, msgs);
+      return { sessionId, messages: msgs };
     } catch (err) {
-      // Return empty messages gracefully without breaking the UI
+      if (userId) {
+        const cached = getCachedUserMessages(userId, sessionId);
+        return { sessionId, messages: cached };
+      }
       return { sessionId, messages: [] };
     }
   }
@@ -187,15 +232,19 @@ export const sendAiMessage = createAsyncThunk(
     { sessionId, message, imageUrl, collegeId, departmentId, subjectId },
     { rejectWithValue, getState }
   ) => {
+    const userId = getState()?.auth?.user?.id;
     const timestamp = new Date().toISOString();
     const fallbackUserMsg = {
       id: `msg_u_${Date.now()}`,
       chat_id: sessionId,
+      user_id: userId,
       sender: 'user',
       message: message || (imageUrl ? '📸 [Exam Question Image Attached]' : 'Exam Query'),
       imageUrl: imageUrl || null,
       created_at: timestamp,
     };
+
+    let result = null;
 
     // 1. First attempt: call backend API
     try {
@@ -211,7 +260,7 @@ export const sendAiMessage = createAsyncThunk(
         if (imageUrl && !data.userMessage.imageUrl) {
           data.userMessage.imageUrl = imageUrl;
         }
-        return data;
+        result = data;
       }
     } catch (backendErr) {
       console.warn(
@@ -221,31 +270,72 @@ export const sendAiMessage = createAsyncThunk(
     }
 
     // 2. Direct client-side AI fallback using Gemini 2.5 Flash with Multimodal Vision
-    try {
-      const currentMessages = getState()?.ai?.messages || [];
-      const replyText = await aiDirectService.callGeminiVision({
-        prompt: message,
-        imageUrl,
-        history: currentMessages,
-      });
+    if (!result) {
+      try {
+        const currentMessages = getState()?.ai?.messages || [];
+        const replyText = await aiDirectService.callGeminiVision({
+          prompt: message,
+          imageUrl,
+          history: currentMessages,
+        });
 
-      const assistantMsg = {
-        id: `msg_a_${Date.now() + 1}`,
-        chat_id: sessionId,
-        sender: 'assistant',
-        message: replyText,
-        created_at: new Date().toISOString(),
-      };
+        const assistantMsg = {
+          id: `msg_a_${Date.now() + 1}`,
+          chat_id: sessionId,
+          user_id: userId,
+          sender: 'assistant',
+          message: replyText,
+          created_at: new Date().toISOString(),
+        };
 
-      return {
-        userMessage: fallbackUserMsg,
-        assistantMessage: assistantMsg,
-        citedResources: [],
-      };
-    } catch (directErr) {
-      console.error('All AI messaging endpoints failed:', directErr);
-      return rejectWithValue(directErr.message || 'Failed to send message');
+        result = {
+          userMessage: fallbackUserMsg,
+          assistantMessage: assistantMsg,
+          citedResources: [],
+        };
+      } catch (directErr) {
+        console.error('All AI messaging endpoints failed:', directErr);
+        return rejectWithValue(directErr.message || 'Failed to send message');
+      }
     }
+
+    // Save to user-scoped private cache
+    if (userId && result) {
+      const existing = getCachedUserMessages(userId, sessionId);
+      saveCachedUserMessages(userId, sessionId, [
+        ...existing,
+        result.userMessage,
+        result.assistantMessage,
+      ]);
+    }
+
+    return result;
+  }
+);
+
+// 5. Delete Session (Allows user to delete unwanted private sessions)
+export const deleteAiSession = createAsyncThunk(
+  'ai/deleteAiSession',
+  async (sessionId, { rejectWithValue, getState }) => {
+    const userId = getState()?.auth?.user?.id;
+    try {
+      await api.delete(`/ai/sessions/${sessionId}`);
+    } catch (err) {
+      console.warn('Backend delete session notice:', err?.message);
+    }
+    if (userId) {
+      const current = getCachedUserSessions(userId);
+      saveCachedUserSessions(
+        userId,
+        current.filter((s) => s.id !== sessionId)
+      );
+      try {
+        localStorage.removeItem(getUserMessagesKey(userId, sessionId));
+      } catch (e) {
+        // ignore
+      }
+    }
+    return sessionId;
   }
 );
 
@@ -278,8 +368,12 @@ const aiSlice = createSlice({
       state.paperAnalysis = null;
       state.paperSolution = null;
     },
+    resetAiState: () => initialState,
   },
   extraReducers: (builder) => {
+    // Completely wipe AI state when user logs out so NO other user ever sees this chat history
+    builder.addCase('auth/logout', () => initialState);
+
     // RAG Search
     builder
       .addCase(searchRepositoryRag.pending, (state) => {
@@ -341,6 +435,13 @@ const aiSlice = createSlice({
         state.sessions.unshift(action.payload);
         state.activeSessionId = action.payload.id;
         state.messages = [];
+      })
+      .addCase(deleteAiSession.fulfilled, (state, action) => {
+        state.sessions = state.sessions.filter((s) => s.id !== action.payload);
+        if (state.activeSessionId === action.payload) {
+          state.activeSessionId = state.sessions[0]?.id || null;
+          state.messages = [];
+        }
       });
 
     // Messages
@@ -367,6 +468,7 @@ export const {
   setActiveSessionId,
   clearRagResults,
   clearPaperAnalysis,
+  resetAiState,
 } = aiSlice.actions;
 
 export const selectAiSessions = (state) => state.ai.sessions;

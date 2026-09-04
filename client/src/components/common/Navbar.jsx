@@ -33,6 +33,7 @@ import {
   Check,
 } from 'lucide-react';
 import { logout, selectCurrentUser, uploadUserAvatar } from '../../redux/authSlice.js';
+import { resetAiState } from '../../redux/aiSlice.js';
 import { supabase } from '../../services/supabaseClient.js';
 
 import {
@@ -101,6 +102,7 @@ export const Navbar = () => {
       console.warn('Supabase logout notice:', err);
     }
     dispatch(logout());
+    dispatch(resetAiState());
     navigate('/login', { replace: true });
   };
 

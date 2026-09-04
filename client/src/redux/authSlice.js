@@ -171,6 +171,7 @@ const authSlice = createSlice({
 
       localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+      localStorage.removeItem('studix_ai_sessions_cache');
       sessionStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
       sessionStorage.removeItem(STORAGE_KEYS.USER_DATA);
       sessionStorage.removeItem(STORAGE_KEYS.ACADEMIC_CONTEXT);
