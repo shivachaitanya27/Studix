@@ -36,16 +36,23 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
 
 
   const [viewMode, setViewMode] = useState('pdf'); // 'pdf' | 'ocr'
+  const [pdfLoading, setPdfLoading] = useState(true);
+  const [useDirectViewer, setUseDirectViewer] = useState(true);
+
+  useEffect(() => {
+    if (isPreviewOpen) {
+      setPdfLoading(true);
+      setUseDirectViewer(true);
+      const timer = setTimeout(() => {
+        setPdfLoading(false);
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [isPreviewOpen, resource.file_url]);
 
   const handleOpenNativeApp = (url) => {
     if (!url) return;
-    const a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleBookmark = (e) => {
@@ -284,16 +291,52 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
             )}
 
             {/* Document Content / Embedded Preview Frame */}
-            <div className="flex-1 rounded-2xl neu-pressed overflow-hidden min-h-[360px] sm:min-h-[460px] flex flex-col relative bg-slate-950">
+            <div className="flex-1 rounded-2xl neu-pressed overflow-hidden min-h-[380px] sm:min-h-[500px] flex flex-col relative bg-slate-950">
               {viewMode === 'pdf' && resource.file_url ? (
-                <iframe
-                  src={`https://docs.google.com/viewer?url=${encodeURIComponent(
-                    resource.file_url
-                  )}&embedded=true`}
-                  title={resource.title}
-                  className="w-full h-full min-h-[360px] sm:min-h-[460px] rounded-2xl border-0"
-                  onError={() => setViewMode('ocr')}
-                />
+                <>
+                  {pdfLoading && (
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/85 backdrop-blur-sm space-y-3 p-4 text-center">
+                      <div className="w-10 h-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-white">Opening PDF instantly...</p>
+                        <p className="text-[11px] text-slate-400">Direct streaming from cloud repository</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {useDirectViewer ? (
+                    <object
+                      data={`${resource.file_url}#toolbar=1&navpanes=0`}
+                      type="application/pdf"
+                      className="w-full h-full min-h-[380px] sm:min-h-[500px] rounded-2xl border-0"
+                      onLoad={() => setPdfLoading(false)}
+                    >
+                      <iframe
+                        src={`${resource.file_url}#toolbar=1&navpanes=0`}
+                        title={resource.title}
+                        className="w-full h-full min-h-[380px] sm:min-h-[500px] rounded-2xl border-0"
+                        onLoad={() => setPdfLoading(false)}
+                        onError={() => {
+                          setPdfLoading(false);
+                          setUseDirectViewer(false);
+                        }}
+                      />
+                    </object>
+                  ) : (
+                    <iframe
+                      src={`https://docs.google.com/viewer?url=${encodeURIComponent(
+                        resource.file_url
+                      )}&embedded=true`}
+                      title={resource.title}
+                      className="w-full h-full min-h-[380px] sm:min-h-[500px] rounded-2xl border-0"
+                      onLoad={() => setPdfLoading(false)}
+                      onError={() => {
+                        setPdfLoading(false);
+                        setViewMode('ocr');
+                      }}
+                    />
+                  )}
+                </>
               ) : (
                 <div className="p-4 sm:p-5 space-y-3 text-xs text-slate-200 overflow-y-auto max-h-[50vh]">
                   <div className="flex items-center space-x-2 text-brand-400 font-bold">
@@ -314,18 +357,33 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
             </div>
 
             {/* Modal Footer Controls */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-700/30 mt-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsPreviewOpen(false);
-                  navigate('/ai-assistant');
-                }}
-                className="px-3.5 py-2 rounded-xl neu-button text-xs font-bold text-amber-300 hover:text-white flex items-center space-x-1.5"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Solve with Exam AI</span>
-              </button>
+            <div className="flex flex-wrap items-center justify-between pt-3 border-t border-slate-700/30 mt-2 gap-2">
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPreviewOpen(false);
+                    navigate('/ai-assistant');
+                  }}
+                  className="px-3.5 py-2 rounded-xl neu-button text-xs font-bold text-amber-300 hover:text-white flex items-center space-x-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Solve with Exam AI</span>
+                </button>
+
+                {viewMode === 'pdf' && resource.file_url && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPdfLoading(true);
+                      setUseDirectViewer(!useDirectViewer);
+                    }}
+                    className="text-[11px] text-slate-400 hover:text-brand-300 underline px-2 py-1"
+                  >
+                    {useDirectViewer ? 'Use Docs Viewer' : 'Use Fast Direct Stream'}
+                  </button>
+                )}
+              </div>
 
               <div className="flex items-center space-x-2">
                 {isAdmin && (

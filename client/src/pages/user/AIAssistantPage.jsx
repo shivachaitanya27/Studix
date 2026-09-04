@@ -349,13 +349,13 @@ export const AIAssistantPage = () => {
   };
 
   return (
-    <div className={`font-['Roboto',sans-serif] ${isFullScreen ? 'fixed inset-0 z-50 p-2 sm:p-4 bg-[#0e121d] overflow-hidden' : ''}`}>
+    <div className={`font-['Roboto',sans-serif] w-full flex-1 flex flex-col min-h-0 ${isFullScreen ? 'fixed inset-0 z-50 p-2 sm:p-4 bg-[#0e121d] overflow-hidden' : 'h-full'}`}>
       {/* Main Container: ChatGPT Two-Column Layout */}
-      <div className={`rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-[#111522]/95 backdrop-blur-xl shadow-2xl flex overflow-hidden ${isFullScreen ? 'h-full' : 'h-[calc(100vh-140px)] min-h-[560px]'}`}>
+      <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-[#111522]/95 backdrop-blur-xl shadow-2xl flex overflow-hidden w-full h-full flex-1 min-h-0">
 
         {/* 1. LEFT SIDEBAR (ChatGPT Sidebar Style) */}
         <div
-          className={`transition-all duration-300 ease-in-out border-r border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-[#0c101a]/90 flex flex-col justify-between ${
+          className={`transition-all duration-300 ease-in-out border-r border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-[#0c101a]/90 flex flex-col justify-between h-full min-h-0 overflow-hidden ${
             isSidebarOpen ? 'w-64 sm:w-72 p-3.5' : 'w-0 p-0 overflow-hidden border-none'
           }`}
         >
@@ -439,7 +439,7 @@ export const AIAssistantPage = () => {
         </div>
 
         {/* 2. RIGHT CHAT CANVAS (ChatGPT Stream & Input) */}
-        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#111522]">
+        <div className="flex-1 flex flex-col min-w-0 h-full min-h-0 overflow-hidden bg-white dark:bg-[#111522] relative">
 
           {/* Top Header Bar */}
           <div className="h-14 px-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
