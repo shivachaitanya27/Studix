@@ -42,7 +42,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   limits: {
-    fileSize: 15 * 1024 * 1024, // 15MB
+    fileSize: 2 * 1024 * 1024, // 2MB strict limit
   },
   fileFilter,
 });
@@ -55,7 +55,7 @@ export const handleAvatarUpload = (req, res, next) => {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({
           success: false,
-          message: 'Avatar file size exceeds 5MB limit. Please choose a smaller photo.',
+          message: 'Avatar file size exceeds 2MB limit. Please choose a photo up to 2MB.',
         });
       }
       return res.status(400).json({

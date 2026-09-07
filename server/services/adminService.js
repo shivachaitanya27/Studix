@@ -147,12 +147,25 @@ export const adminService = {
   /**
    * Permanently purge a resource from PostgreSQL database, Supabase Storage, and local disk
    */
-  async deleteResource(resourceId, adminUserId) {
+  async deleteResource(resourceId, userId, userRole) {
 
     const resource = await dataStore.findResourceById(resourceId);
     if (!resource) {
       const err = new Error('Resource not found.');
       err.status = 404;
+      throw err;
+    }
+
+    const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+    const isOwner =
+      userId &&
+      (resource.uploaded_by === userId ||
+       resource.uploader_id === userId ||
+       resource.uploader?.id === userId);
+
+    if (!isAdmin && !isOwner) {
+      const err = new Error('Permission denied. You can only delete resources that you uploaded.');
+      err.status = 403;
       throw err;
     }
 
@@ -200,11 +213,11 @@ export const adminService = {
       id: `log-del-${Date.now()}`,
       filename: resource.title,
       resourceType: resource.resource_type,
-      rejectedBy: 'ADMIN_PURGE',
-      reason: 'Permanently purged by Administrator',
+      rejectedBy: isAdmin ? 'ADMIN_PURGE' : 'USER_DELETE',
+      reason: isAdmin ? 'Permanently purged by Administrator' : 'Deleted by resource uploader',
       timestamp: new Date().toISOString(),
-      action: 'ADMIN_DELETED',
-      adminId: adminUserId,
+      action: isAdmin ? 'ADMIN_DELETED' : 'USER_DELETED',
+      adminId: userId,
     });
 
     return {

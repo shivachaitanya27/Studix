@@ -328,6 +328,7 @@ export const UploadModal = ({ isOpen, onClose }) => {
                   <option value="MID_1">Mid-1 Exam Paper</option>
                   <option value="MID_2">Mid-2 Exam Paper</option>
                   <option value="MODEL_PAPER">Model Exam Paper</option>
+                  <option value="QUESTION_BANK">Question Bank (Important Questions &amp; QB)</option>
                 </optgroup>
                 <optgroup label="Lecture Notes">
                   <option value="UNIT_NOTES">Unit-wise Notes</option>

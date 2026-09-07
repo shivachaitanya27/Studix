@@ -126,6 +126,25 @@ export const uploadUserAvatar = createAsyncThunk(
   }
 );
 
+export const updateUserProfile = createAsyncThunk(
+  'auth/updateUserProfile',
+  async (profileData, { rejectWithValue }) => {
+    try {
+      const response = await api.put('/auth/profile', profileData);
+      const updatedUser = response.data?.data;
+      if (updatedUser) {
+        localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUser));
+        sessionStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUser));
+      }
+      return updatedUser;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || err.message || 'Failed to update profile'
+      );
+    }
+  }
+);
+
 export const syncOAuthSession = createAsyncThunk(
   'auth/syncOAuthSession',
   async ({ supabaseSession }, { rejectWithValue }) => {
@@ -290,6 +309,22 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(uploadUserAvatar.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      });
+
+    // Update user profile (name, etc.)
+    builder
+      .addCase(updateUserProfile.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updateUserProfile.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = { ...state.user, ...action.payload };
+        state.error = null;
+      })
+      .addCase(updateUserProfile.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       });

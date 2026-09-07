@@ -7,6 +7,7 @@ import MobileBottomNav from '../components/common/MobileBottomNav.jsx';
 import SettingsModal from '../components/common/SettingsModal.jsx';
 import SupportModal from '../components/common/SupportModal.jsx';
 import ExitFeedbackModal from '../components/common/ExitFeedbackModal.jsx';
+import FeatureGuideModal from '../components/common/FeatureGuideModal.jsx';
 import { selectCurrentUser } from '../redux/authSlice.js';
 
 export const UserLayout = () => {
@@ -14,9 +15,27 @@ export const UserLayout = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   const location = useLocation();
   const isAiPage = location.pathname.startsWith('/ai-assistant');
+
+  // Auto-launch Feature Guide for new users after signup or present users with updated features
+  useEffect(() => {
+    const isNewSignup = localStorage.getItem('studix_new_signup') === 'true';
+    const guideSeen = localStorage.getItem('studix_guide_seen') === 'true';
+    const v2Seen = localStorage.getItem('studix_v2_features_seen') === 'true';
+    if (!guideSeen || !v2Seen || isNewSignup) {
+      const delay = isNewSignup ? 700 : 1400;
+      const timer = setTimeout(() => {
+        setIsGuideOpen(true);
+        if (isNewSignup) {
+          localStorage.removeItem('studix_new_signup');
+        }
+      }, delay);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   // Exit-intent detection for first-time users before leaving the app
   useEffect(() => {
@@ -45,7 +64,10 @@ export const UserLayout = () => {
   return (
     <div className={`min-h-screen flex flex-col bg-dark-base text-slate-100 selection:bg-brand-500 selection:text-white ${isAiPage ? 'h-screen h-[100dvh] overflow-hidden' : ''}`}>
       {/* Top Navigation */}
-      <Navbar onOpenSupport={() => setIsSupportOpen(true)} />
+      <Navbar
+        onOpenSupport={() => setIsSupportOpen(true)}
+        onOpenGuide={() => setIsGuideOpen(true)}
+      />
 
       {/* Main Content Area with Mobile Safe Bottom Padding */}
       <main className={`flex-1 w-full mx-auto ${isAiPage ? 'max-w-7xl px-2 sm:px-4 py-1 sm:py-2 flex flex-col min-h-0 overflow-hidden pb-16 md:pb-2' : 'max-w-7xl px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 md:pb-8'}`}>
@@ -105,6 +127,12 @@ export const UserLayout = () => {
         isOpen={isFeedbackOpen}
         onClose={() => setIsFeedbackOpen(false)}
         user={user}
+      />
+
+      {/* Interactive Feature Guide & Walkthrough Modal */}
+      <FeatureGuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
       />
 
       {/* Footer with Developer Attribution (Hidden on AI Chat to provide rock-solid full-height stable chat) */}

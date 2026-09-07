@@ -153,6 +153,17 @@ export const RepositoryPage = () => {
       ).length,
     },
     {
+      id: 'QUESTION_BANK',
+      label: 'Question Bank',
+      count: resourcesList.filter(
+        (r) =>
+          ['QUESTION_BANK', 'QB'].includes(r.resource_type) ||
+          (r.title &&
+            (r.title.toLowerCase().includes('question bank') ||
+              r.title.toLowerCase().includes('qb')))
+      ).length,
+    },
+    {
       id: 'NOTES',
       label: 'Study Notes',
       count: resourcesList.filter((r) =>
@@ -196,6 +207,14 @@ export const RepositoryPage = () => {
         }
       } else if (activeTab === 'MODEL') {
         if (item.resource_type !== 'MODEL_PAPER') {
+          return false;
+        }
+      } else if (activeTab === 'QUESTION_BANK') {
+        const isQb = ['QUESTION_BANK', 'QB'].includes(item.resource_type);
+        const hasQbText =
+          (item.title || '').toLowerCase().includes('question bank') ||
+          (item.title || '').toLowerCase().includes('qb');
+        if (!isQb && !hasQbText) {
           return false;
         }
       } else if (activeTab === 'NOTES') {
@@ -491,6 +510,7 @@ export const RepositoryPage = () => {
               <option value="MID_1">Mid-1 Exam Paper</option>
               <option value="MID_2">Mid-2 Exam Paper</option>
               <option value="MODEL_PAPER">Model Exam Paper</option>
+              <option value="QUESTION_BANK">Question Bank</option>
             </optgroup>
             <optgroup label="Lecture Notes">
               <option value="UNIT_NOTES">Unit-wise Notes</option>

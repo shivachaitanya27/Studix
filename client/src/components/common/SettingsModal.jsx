@@ -253,15 +253,6 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
     setTimeout(() => setSettingsSavedToast(false), 2500);
   };
 
-  const handleSaveCurrentTab = (e) => {
-    if (activeTab === 'stream') {
-      handleUpdateStream(e);
-    } else if (activeTab === 'security') {
-      handleChangePassword(e);
-    } else {
-      handleSavePreferences();
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -909,38 +900,7 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
         )}
         </div>
 
-        {/* Modal Footer - Fixed at Bottom with Back and Save Buttons */}
-        <div className="flex items-center space-x-3 p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 flex-shrink-0 bg-slate-50/95 dark:bg-[#111522]/95 backdrop-blur-md">
-          <button
-            type="button"
-            onClick={onClose}
-            id="settings-modal-footer-back-btn"
-            className="py-2.5 px-4 rounded-xl neu-button text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back</span>
-          </button>
 
-          <button
-            type="button"
-            onClick={handleSaveCurrentTab}
-            disabled={streamLoading || passwordLoading}
-            id="settings-modal-footer-save-btn"
-            className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-accent-violet hover:from-brand-500 hover:to-accent-violet text-white text-xs font-black shadow-glow transition-all flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-[0.98] cursor-pointer"
-          >
-            {streamLoading || passwordLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin text-white" />
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
-                <Check className="w-4 h-4 text-white" />
-                <span>Save</span>
-              </>
-            )}
-          </button>
-        </div>
       </div>
     </div>
   );

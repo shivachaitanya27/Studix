@@ -31,7 +31,7 @@ const SUGGESTED_TAGS = [
   '💡 Add Video Lectures',
 ];
 
-export const ExitFeedbackModal = ({ isOpen, onClose, user }) => {
+export const ExitFeedbackModal = ({ isOpen, onClose, user, onExitAfter }) => {
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [selectedTags, setSelectedTags] = useState(['⚡ Fast & Smooth', '📚 Quality Notes']);
@@ -48,6 +48,7 @@ export const ExitFeedbackModal = ({ isOpen, onClose, user }) => {
   const markDoneAndClose = () => {
     localStorage.setItem('studix_feedback_done', 'true');
     onClose();
+    if (onExitAfter) onExitAfter();
   };
 
   const handleSubmit = async (e) => {
@@ -66,7 +67,8 @@ export const ExitFeedbackModal = ({ isOpen, onClose, user }) => {
       setTimeout(() => {
         setIsSubmitted(false);
         onClose();
-      }, 2500);
+        if (onExitAfter) onExitAfter();
+      }, 1500);
     } catch (err) {
       console.warn('Feedback submit notice:', err);
       // Still allow graceful close so user isn't blocked
@@ -75,7 +77,8 @@ export const ExitFeedbackModal = ({ isOpen, onClose, user }) => {
       setTimeout(() => {
         setIsSubmitted(false);
         onClose();
-      }, 2000);
+        if (onExitAfter) onExitAfter();
+      }, 1200);
     } finally {
       setIsSubmitting(false);
     }
@@ -213,9 +216,9 @@ export const ExitFeedbackModal = ({ isOpen, onClose, user }) => {
                 <button
                   type="button"
                   onClick={markDoneAndClose}
-                  className="text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
+                  className="text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
                 >
-                  Skip for now
+                  {onExitAfter ? 'Skip & Exit' : 'Skip for now'}
                 </button>
 
                 <button

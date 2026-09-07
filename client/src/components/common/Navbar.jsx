@@ -35,7 +35,7 @@ import {
   Building2,
   School,
 } from 'lucide-react';
-import { logout, selectCurrentUser, uploadUserAvatar } from '../../redux/authSlice.js';
+import { logout, selectCurrentUser, uploadUserAvatar, updateUserProfile } from '../../redux/authSlice.js';
 import { resetAiState } from '../../redux/aiSlice.js';
 import { supabase } from '../../services/supabaseClient.js';
 
@@ -48,8 +48,9 @@ import {
 import ThemeSwitcher, { THEMES } from './ThemeSwitcher.jsx';
 import LanguageSwitcher from './LanguageSwitcher.jsx';
 import SettingsModal from './SettingsModal.jsx';
+import ExitFeedbackModal from './ExitFeedbackModal.jsx';
 
-export const Navbar = ({ onOpenSupport }) => {
+export const Navbar = ({ onOpenSupport, onOpenGuide }) => {
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -70,10 +71,65 @@ export const Navbar = ({ onOpenSupport }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState('stream');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showExitFeedback, setShowExitFeedback] = useState(false);
+
+  // Name editing state
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
+
+  const handleStartEditName = () => {
+    setEditedName(user?.full_name || '');
+    setIsEditingName(true);
+  };
+
+  const handleSaveName = async (e) => {
+    if (e) e.preventDefault();
+    const trimmed = editedName.trim();
+    if (!trimmed) {
+      setAvatarToast('Name cannot be empty.');
+      setTimeout(() => setAvatarToast(''), 3000);
+      return;
+    }
+    if (trimmed === user?.full_name) {
+      setIsEditingName(false);
+      return;
+    }
+    try {
+      setIsSavingName(true);
+      await dispatch(updateUserProfile({ full_name: trimmed })).unwrap();
+      setIsEditingName(false);
+      setAvatarToast('Profile name updated successfully!');
+      setTimeout(() => setAvatarToast(''), 3500);
+    } catch (err) {
+      setAvatarToast(typeof err === 'string' ? err : (err?.message || 'Failed to update name'));
+      setTimeout(() => setAvatarToast(''), 4000);
+    } finally {
+      setIsSavingName(false);
+    }
+  };
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // 1. Strict image-only validation
+    if (!file.type.startsWith('image/')) {
+      setAvatarToast('Please select a valid image file (JPEG, PNG, WebP).');
+      setTimeout(() => setAvatarToast(''), 4000);
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    // 2. Strict 2MB max file size validation
+    const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+    if (file.size > MAX_AVATAR_BYTES) {
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      setAvatarToast(`Profile image exceeds 2MB limit (selected: ${sizeMb}MB). Please choose a photo up to 2MB.`);
+      setTimeout(() => setAvatarToast(''), 4500);
+      if (e.target) e.target.value = '';
+      return;
+    }
 
     // Instant optimistic preview
     const previewUrl = URL.createObjectURL(file);
@@ -94,8 +150,19 @@ export const Navbar = ({ onOpenSupport }) => {
     }
   };
 
+  const handleExitClick = () => {
+    setShowLogoutConfirm(false);
+    const isFeedbackDone = localStorage.getItem('studix_feedback_done') === 'true';
+    if (!isFeedbackDone) {
+      setShowExitFeedback(true);
+    } else {
+      confirmLogout();
+    }
+  };
+
   const confirmLogout = async () => {
     setShowLogoutConfirm(false);
+    setShowExitFeedback(false);
     setIsProfileMenuOpen(false);
     try {
       if (supabase) {
@@ -346,9 +413,50 @@ export const Navbar = ({ onOpenSupport }) => {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">
-                        {user?.full_name || 'Scholar'}
-                      </h4>
+                      {isEditingName ? (
+                        <form onSubmit={handleSaveName} className="flex items-center gap-1 my-0.5">
+                          <input
+                            type="text"
+                            value={editedName}
+                            onChange={(e) => setEditedName(e.target.value)}
+                            placeholder="Enter your name"
+                            autoFocus
+                            maxLength={50}
+                            className="w-full px-2 py-1 text-xs rounded-lg bg-slate-100 dark:bg-slate-800 border border-brand-500/50 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500 font-bold"
+                          />
+                          <button
+                            type="submit"
+                            disabled={isSavingName}
+                            title="Save name"
+                            className="p-1 rounded-lg bg-brand-600 hover:bg-brand-500 text-white cursor-pointer disabled:opacity-50"
+                          >
+                            {isSavingName ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingName(false)}
+                            title="Cancel"
+                            className="p-1 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 cursor-pointer"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </form>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">
+                            {user?.full_name || 'Scholar'}
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={handleStartEditName}
+                            id="edit-profile-name-btn"
+                            title="Change your name"
+                            className="p-1 rounded-md hover:bg-brand-500/20 text-brand-400 hover:text-brand-300 transition-colors cursor-pointer"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
                         <Mail className="w-3 h-3 flex-shrink-0" />
                         <span className="truncate">{user?.email}</span>
@@ -472,6 +580,20 @@ export const Navbar = ({ onOpenSupport }) => {
                   >
                     <Headphones className="w-3.5 h-3.5 text-brand-400" />
                     <span>Student Support & Admin Chat</span>
+                  </button>
+
+                  {/* App Guide & What's New Feature Tour */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      if (onOpenGuide) onOpenGuide();
+                    }}
+                    id="profile-dropdown-guide-btn"
+                    className="w-full py-2 px-3 rounded-xl neu-button text-xs font-semibold text-amber-500 dark:text-amber-300 hover:text-white flex items-center justify-center space-x-2 transition-all border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/15 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>App Guide &amp; What&apos;s New</span>
                   </button>
 
                   {/* Account & Security Settings */}
@@ -603,9 +725,47 @@ export const Navbar = ({ onOpenSupport }) => {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                    {user?.full_name || 'Student'}
-                  </h4>
+                  {isEditingName ? (
+                    <form onSubmit={handleSaveName} className="flex items-center gap-1 my-0.5">
+                      <input
+                        type="text"
+                        value={editedName}
+                        onChange={(e) => setEditedName(e.target.value)}
+                        placeholder="Enter name"
+                        autoFocus
+                        maxLength={50}
+                        className="w-full px-2 py-1 text-xs rounded-lg bg-white dark:bg-slate-900 border border-brand-500/50 text-slate-900 dark:text-white font-bold"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isSavingName}
+                        className="p-1 rounded-lg bg-brand-600 hover:bg-brand-500 text-white cursor-pointer disabled:opacity-50"
+                      >
+                        {isSavingName ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingName(false)}
+                        className="p-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {user?.full_name || 'Student'}
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={handleStartEditName}
+                        title="Change your name"
+                        className="p-1 rounded text-brand-400 hover:text-brand-300 transition-colors cursor-pointer"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
                   <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-brand-500/10 dark:bg-brand-500/20 text-brand-600 dark:text-brand-300 border border-brand-500/20">
                     {user?.role === 'ADMIN' ? 'Admin Access' : 'Verified Campus Student'}
@@ -861,10 +1021,10 @@ export const Navbar = ({ onOpenSupport }) => {
             </div>
             <div>
               <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
-                Log Out of Studix?
+                Are you sure you want to exit?
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Are you sure you want to log out? You will need to sign in again to access verified campus streams.
+                Are you sure you want to exit Studix? You will need to sign in again to access verified campus resources and streams.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 pt-2">
@@ -878,17 +1038,25 @@ export const Navbar = ({ onOpenSupport }) => {
               </button>
               <button
                 type="button"
-                onClick={confirmLogout}
+                onClick={handleExitClick}
                 id="logout-confirm-btn"
                 className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white text-xs font-bold shadow-lg transition-all cursor-pointer"
               >
-                Log Out
+                Yes, Exit
               </button>
             </div>
           </div>
         </div>,
         document.body
       )}
+
+      {/* First-Time User Exit Feedback Modal triggered upon exit */}
+      <ExitFeedbackModal
+        isOpen={showExitFeedback}
+        onClose={() => setShowExitFeedback(false)}
+        user={user}
+        onExitAfter={confirmLogout}
+      />
 
       {/* Profile Photo Toast Notification */}
       {avatarToast && (

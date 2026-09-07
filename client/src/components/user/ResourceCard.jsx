@@ -34,6 +34,14 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
       user.role === 'SUPER_ADMIN' ||
       (user.email || '').toLowerCase().trim() === 'vshivachaitanya7@gmail.com');
 
+  const isOwner = Boolean(
+    user?.id &&
+      (resource.uploaded_by === user.id ||
+        resource.uploader_id === user.id ||
+        resource.uploader?.id === user.id)
+  );
+
+  const canDelete = Boolean(isAdmin || isOwner);
 
   const [viewMode, setViewMode] = useState('pdf'); // 'pdf' | 'ocr'
   const [pdfLoading, setPdfLoading] = useState(true);
@@ -67,6 +75,8 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
     MID_1: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
     MID_2: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
     MODEL_PAPER: 'text-sky-400 bg-sky-500/10 border-sky-500/30',
+    QUESTION_BANK: 'text-amber-300 bg-amber-500/15 border-amber-500/40',
+    QB: 'text-amber-300 bg-amber-500/15 border-amber-500/40',
     UNIT_NOTES: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
     FACULTY_NOTES: 'text-teal-400 bg-teal-500/10 border-teal-500/30',
     STUDENT_NOTES: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30',
@@ -185,17 +195,33 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsPreviewOpen(true);
-          }}
-          className="px-3 py-1.5 rounded-xl neu-button text-[11px] font-bold text-brand-300 hover:text-white flex items-center space-x-1"
-        >
-          <Eye className="w-3.5 h-3.5" />
-          <span>View PDF</span>
-        </button>
+        <div className="flex items-center space-x-1.5">
+          {canDelete && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDeleteConfirm(true);
+              }}
+              className="p-1.5 rounded-xl neu-button text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-all cursor-pointer"
+              title={isAdmin ? 'Delete file (Admin)' : 'Delete your uploaded file'}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsPreviewOpen(true);
+            }}
+            className="px-3 py-1.5 rounded-xl neu-button text-[11px] font-bold text-brand-300 hover:text-white flex items-center space-x-1"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>View PDF</span>
+          </button>
+        </div>
       </div>
 
       {/* Document Inspector & Preview Modal */}
@@ -387,15 +413,15 @@ export const ResourceCard = ({ resource, isBookmarked = false }) => {
               </div>
 
               <div className="flex items-center space-x-2">
-                {isAdmin && (
+                {canDelete && (
                   <button
                     type="button"
                     onClick={() => setShowDeleteConfirm(true)}
                     className="px-3 py-2 rounded-xl neu-button text-xs font-bold text-rose-500 hover:bg-rose-500/10 border border-rose-500/30 flex items-center space-x-1.5 cursor-pointer"
-                    title="Remove Unwanted File (Admin)"
+                    title={isAdmin ? 'Remove Unwanted File (Admin)' : 'Delete Your Uploaded File'}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Remove File</span>
+                    <span className="hidden sm:inline">Delete File</span>
                     <span className="sm:hidden">Delete</span>
                   </button>
                 )}

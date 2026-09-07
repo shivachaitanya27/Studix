@@ -63,6 +63,10 @@ export const Signup = () => {
     );
 
     if (signupUser.fulfilled.match(result)) {
+      // Ensure new user always gets guided with the full app tour on first dashboard visit
+      localStorage.removeItem('studix_guide_seen');
+      localStorage.removeItem('studix_feedback_done');
+      localStorage.setItem('studix_new_signup', 'true');
       // Direct user straight to Multi-Tenant Onboarding flow
       navigate('/onboarding');
     }

@@ -102,7 +102,8 @@ export const adminController = {
     try {
       const result = await adminService.deleteResource(
         req.params.id,
-        req.user.id
+        req.user.id,
+        req.user.role
       );
       return res.status(200).json(result);
     } catch (error) {
