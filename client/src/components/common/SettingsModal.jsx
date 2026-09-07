@@ -26,16 +26,19 @@ import {
   Building2,
   School,
   Sparkle,
+  User,
+  Camera,
+  RefreshCw,
 } from 'lucide-react';
 import api from '../../services/api.js';
-import { updateUserState } from '../../redux/authSlice.js';
+import { updateUserState, updateUserProfile, uploadUserAvatar } from '../../redux/authSlice.js';
 import { syncFromUser, fetchSubjects } from '../../redux/academicSlice.js';
 import { fetchResources } from '../../redux/resourceSlice.js';
 
-export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) => {
+export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream', onOpenGuide }) => {
   const dispatch = useDispatch();
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
-  const [activeTab, setActiveTab] = useState(initialTab); // 'stream' | 'security' | 'notifications' | 'uploads'
+  const [activeTab, setActiveTab] = useState(initialTab); // 'profile' | 'stream' | 'security' | 'notifications' | 'uploads'
 
   // Academic Stream State (College, Department, Year & Semester)
   const [colleges, setColleges] = useState([]);
@@ -47,6 +50,73 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
   const [streamLoading, setStreamLoading] = useState(false);
   const [streamSuccess, setStreamSuccess] = useState('');
   const [streamError, setStreamError] = useState('');
+
+  // Profile & Identity state
+  const [profileName, setProfileName] = useState(user?.full_name || '');
+  const [nameLoading, setNameLoading] = useState(false);
+  const [nameSuccess, setNameSuccess] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarMsg, setAvatarMsg] = useState('');
+  const settingsAvatarInputRef = React.useRef(null);
+
+  useEffect(() => {
+    if (user?.full_name) {
+      setProfileName(user.full_name);
+    }
+  }, [user?.full_name]);
+
+  const handleUpdateName = async (e) => {
+    e.preventDefault();
+    const trimmed = profileName.trim();
+    if (!trimmed) {
+      setNameError('Name cannot be empty.');
+      return;
+    }
+    setNameLoading(true);
+    setNameError('');
+    setNameSuccess('');
+    try {
+      await dispatch(updateUserProfile({ full_name: trimmed })).unwrap();
+      setNameSuccess('Display name updated successfully!');
+      setTimeout(() => setNameSuccess(''), 3500);
+    } catch (err) {
+      setNameError(typeof err === 'string' ? err : err?.message || 'Failed to update name');
+    } finally {
+      setNameLoading(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setAvatarMsg('Please choose an image file (JPEG, PNG, WebP).');
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      setAvatarMsg(`Photo exceeds 2MB limit (${sizeMb}MB). Please choose a photo up to 2MB.`);
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    try {
+      setAvatarUploading(true);
+      setAvatarMsg('');
+      await dispatch(uploadUserAvatar(file)).unwrap();
+      setAvatarMsg('Profile photo updated successfully!');
+      setTimeout(() => setAvatarMsg(''), 3500);
+    } catch (err) {
+      setAvatarMsg(typeof err === 'string' ? err : err?.message || 'Failed to upload photo');
+    } finally {
+      setAvatarUploading(false);
+      if (e.target) e.target.value = '';
+    }
+  };
 
   // Change Password state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -302,6 +372,7 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
         {/* Tab Navigation - Fixed underneath Header */}
         <div className="flex space-x-1 sm:space-x-1.5 px-4 sm:px-5 py-2.5 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 bg-slate-50/60 dark:bg-slate-900/40 overflow-x-auto scrollbar-none">
           {[
+            { id: 'profile', label: 'Profile & Name', icon: User },
             { id: 'stream', label: 'Academic Stream', icon: GraduationCap },
             { id: 'security', label: 'Security & Password', icon: Lock },
             { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -313,7 +384,7 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+                className={`px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap cursor-pointer ${
                   isActive
                     ? 'neu-tab-active text-brand-600 dark:text-brand-300 font-extrabold border border-brand-500/30'
                     : 'neu-button text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -328,6 +399,181 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream' }) 
 
         {/* Scrollable Tab Content Area */}
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+          {/* TAB: Profile & Identity (Name, 2MB Photo, Tour & Version) */}
+          {activeTab === 'profile' && (
+            <div className="space-y-4">
+              {/* Profile Photo Upload Section */}
+              <div className="p-4 rounded-2xl neu-flat border border-slate-200 dark:border-slate-800 flex items-center space-x-4">
+                <input
+                  type="file"
+                  ref={settingsAvatarInputRef}
+                  onChange={handleAvatarUpload}
+                  accept="image/*"
+                  className="hidden"
+                  id="settings-avatar-file-input"
+                />
+
+                <div
+                  onClick={() => settingsAvatarInputRef.current?.click()}
+                  className="relative w-16 h-16 rounded-2xl overflow-hidden neu-button cursor-pointer group border-2 border-brand-500/40 flex-shrink-0"
+                  title="Click to choose a photo (max 2MB)"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-tr from-brand-600 to-accent-violet flex items-center justify-center text-white font-black text-xl">
+                    {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
+                  </div>
+                  {user?.avatar_url && (
+                    <img
+                      src={user.avatar_url}
+                      alt={user?.full_name || 'Profile'}
+                      className="relative z-10 w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  )}
+                  {avatarUploading ? (
+                    <div className="absolute inset-0 z-20 bg-black/60 flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 text-brand-400 animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 z-20 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                      <Camera className="w-5 h-5" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <h4 className="text-xs font-bold text-slate-800 dark:text-white">Profile Photo</h4>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-brand-500/15 text-brand-400 border border-brand-500/30 uppercase">
+                      Max 2MB
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    JPG, PNG, WebP supported. Photo updates instantly across campus.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => settingsAvatarInputRef.current?.click()}
+                    disabled={avatarUploading}
+                    className="mt-1 px-3 py-1.5 rounded-xl neu-button text-xs font-bold text-brand-600 dark:text-brand-300 hover:text-white flex items-center space-x-1.5 cursor-pointer"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>{avatarUploading ? 'Uploading...' : 'Change Photo'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {avatarMsg && (
+                <div className="p-3 rounded-xl bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold flex items-center space-x-2 animate-fade-in">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <span>{avatarMsg}</span>
+                </div>
+              )}
+
+              {/* Edit Display Name Form */}
+              <form onSubmit={handleUpdateName} className="space-y-3">
+                {nameSuccess && (
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center space-x-2 animate-fade-in">
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                    <span>{nameSuccess}</span>
+                  </div>
+                )}
+
+                {nameError && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center space-x-2 animate-fade-in">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{nameError}</span>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                    <span>Display Name</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Visible to your campus peers</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
+                    placeholder="Enter your full name"
+                    maxLength={50}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 font-bold"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200">Email Address (Permanent)</label>
+                  <input
+                    type="email"
+                    value={user?.email || ''}
+                    disabled
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 text-xs text-slate-500 border border-slate-200 dark:border-slate-700/60 cursor-not-allowed"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={nameLoading}
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-accent-violet hover:from-brand-500 hover:to-accent-violet text-white text-xs font-black shadow-glow transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+                >
+                  {nameLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Saving Name...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 text-white" />
+                      <span>Save Display Name</span>
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* App Guide & Update Controls Card */}
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-500 dark:text-amber-400 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4" />
+                    App Guide &amp; Version
+                  </span>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-300">
+                    v2.2.0 Active
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300">
+                  Review the interactive walkthrough tour or force refresh the app to ensure your device runs the latest code.
+                </p>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      if (onOpenGuide) onOpenGuide();
+                    }}
+                    className="py-2 px-3 rounded-xl neu-button text-xs font-bold text-amber-600 dark:text-amber-300 hover:bg-amber-500/20 flex items-center justify-center space-x-1.5 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Open Tour</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        localStorage.removeItem('studix_guide_seen');
+                        window.location.reload(true);
+                      }
+                    }}
+                    className="py-2 px-3 rounded-xl neu-button text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-brand-400 flex items-center justify-center space-x-1.5 cursor-pointer"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Force Refresh</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB 0: Academic Stream (Year & Semester Progression) */}
           {activeTab === 'stream' && (
           <form onSubmit={handleUpdateStream} className="space-y-4">

@@ -970,6 +970,20 @@ export const Navbar = ({ onOpenSupport, onOpenGuide }) => {
 
             {/* Account Settings & Logout in Drawer */}
             <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2 mt-4">
+              {/* App Guide & What's New button in Mobile Drawer */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileDrawerOpen(false);
+                  if (onOpenGuide) onOpenGuide();
+                }}
+                id="mobile-drawer-guide-btn"
+                className="w-full py-2.5 px-3 rounded-xl neu-button text-xs font-bold text-amber-600 dark:text-amber-300 hover:bg-amber-500/10 flex items-center justify-center space-x-2 cursor-pointer border border-amber-500/40 bg-amber-500/5"
+              >
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span>App Guide &amp; What&apos;s New</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => {

@@ -113,6 +113,7 @@ export const UserLayout = () => {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         user={user}
+        onOpenGuide={() => setIsGuideOpen(true)}
       />
 
       {/* Student Support & Admin Live Chat Modal */}
