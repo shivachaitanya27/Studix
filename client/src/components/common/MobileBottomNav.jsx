@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
   FolderArchive,
@@ -11,6 +12,7 @@ import {
 import { selectCurrentUser } from '../../redux/authSlice.js';
 
 export const MobileBottomNav = ({ onOpenSettings }) => {
+  const { t } = useTranslation();
   const location = useLocation();
   const user = useSelector(selectCurrentUser);
 
@@ -21,19 +23,19 @@ export const MobileBottomNav = ({ onOpenSettings }) => {
   const navItems = [
     {
       to: '/dashboard',
-      label: 'Home',
+      label: t('nav.home') || 'Home',
       icon: LayoutDashboard,
       id: 'mobile-nav-dashboard',
     },
     {
       to: '/repository',
-      label: 'Repository',
+      label: t('nav.repository') || 'Repository',
       icon: FolderArchive,
       id: 'mobile-nav-repository',
     },
     {
       to: '/ai-assistant',
-      label: 'AI Solver',
+      label: t('nav.aiSolver') || 'AI Solver',
       icon: Sparkles,
       highlight: true,
       id: 'mobile-nav-ai',
@@ -43,7 +45,7 @@ export const MobileBottomNav = ({ onOpenSettings }) => {
   if (isAuthorizedAdmin) {
     navItems.push({
       to: '/admin',
-      label: 'Admin',
+      label: t('nav.admin') || 'Admin',
       icon: ShieldCheck,
       adminOnly: true,
       id: 'mobile-nav-admin',
@@ -115,7 +117,7 @@ export const MobileBottomNav = ({ onOpenSettings }) => {
           <div className="p-1.5 rounded-xl transition-all duration-200 group-hover:scale-110 group-hover:text-brand-400">
             <User className="w-5 h-5" />
           </div>
-          <span className="text-[10px] mt-0.5 tracking-tight font-bold">Settings</span>
+          <span className="text-[10px] mt-0.5 tracking-tight font-bold">{t('nav.settings') || 'Settings'}</span>
         </button>
       </nav>
     </div>

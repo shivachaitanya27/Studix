@@ -29,13 +29,16 @@ import {
   User,
   Camera,
   RefreshCw,
+  Globe,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/api.js';
 import { updateUserState, updateUserProfile, uploadUserAvatar } from '../../redux/authSlice.js';
 import { syncFromUser, fetchSubjects } from '../../redux/academicSlice.js';
 import { fetchResources } from '../../redux/resourceSlice.js';
 
 export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream', onOpenGuide }) => {
+  const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const [activeTab, setActiveTab] = useState(initialTab); // 'profile' | 'stream' | 'security' | 'notifications' | 'uploads'
@@ -372,11 +375,12 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream', on
         {/* Tab Navigation - Fixed underneath Header */}
         <div className="flex space-x-1 sm:space-x-1.5 px-4 sm:px-5 py-2.5 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 bg-slate-50/60 dark:bg-slate-900/40 overflow-x-auto scrollbar-none">
           {[
-            { id: 'profile', label: 'Profile & Name', icon: User },
-            { id: 'stream', label: 'Academic Stream', icon: GraduationCap },
-            { id: 'security', label: 'Security & Password', icon: Lock },
-            { id: 'notifications', label: 'Notifications', icon: Bell },
-            { id: 'uploads', label: 'Upload Permissions', icon: FileUp },
+            { id: 'profile', label: t('settings.profile') || 'Profile & Name', icon: User },
+            { id: 'language', label: t('settings.language') || 'Language', icon: Globe },
+            { id: 'stream', label: t('settings.stream') || 'Academic Stream', icon: GraduationCap },
+            { id: 'security', label: t('settings.security') || 'Security & Password', icon: Lock },
+            { id: 'notifications', label: t('settings.notifications') || 'Notifications', icon: Bell },
+            { id: 'uploads', label: t('settings.uploads') || 'Upload Permissions', icon: FileUp },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -384,6 +388,7 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream', on
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
+                id={`settings-tab-${tab.id}`}
                 className={`px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap cursor-pointer ${
                   isActive
                     ? 'neu-tab-active text-brand-600 dark:text-brand-300 font-extrabold border border-brand-500/30'
@@ -530,6 +535,28 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream', on
                 </button>
               </form>
 
+              {/* Quick Language Preference in Profile Tab */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-xl bg-accent-cyan/10 text-accent-cyan flex items-center justify-center">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800 dark:text-white">{t('settings.language') || 'Language'}</h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {t('settings.activeLangBadge') || 'Current'}: <span className="font-bold text-brand-400">{(i18n.resolvedLanguage || i18n.language || 'en').slice(0, 2) === 'te' ? 'తెలుగు (Telugu)' : (i18n.resolvedLanguage || i18n.language || 'en').slice(0, 2) === 'ta' ? 'தமிழ் (Tamil)' : 'English'}</span>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('language')}
+                  className="px-3 py-1.5 rounded-xl neu-button text-xs font-bold text-brand-500 dark:text-brand-300 hover:text-white border border-brand-500/30 cursor-pointer"
+                >
+                  Change
+                </button>
+              </div>
+
               {/* App Guide & Update Controls Card */}
               <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 space-y-2.5">
                 <div className="flex items-center justify-between">
@@ -569,6 +596,81 @@ export const SettingsModal = ({ isOpen, onClose, user, initialTab = 'stream', on
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Force Refresh</span>
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: App Language Selection */}
+          {activeTab === 'language' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="p-4 rounded-2xl neu-flat border border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="flex items-center space-x-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-accent-cyan/10 text-accent-cyan flex items-center justify-center">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">
+                      {t('settings.selectLanguage') || 'Select App Language'}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Choose your preferred language for the Studix platform interface. Content will immediately switch across the entire app.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  {[
+                    { code: 'en', label: 'English', native: 'English', desc: 'Standard Academic Interface' },
+                    { code: 'te', label: 'Telugu', native: 'తెలుగు', desc: 'పూర్తి తెలుగు ఇంటర్‌ఫేస్' },
+                    { code: 'ta', label: 'Tamil', native: 'தமிழ்', desc: 'முழுமையான தமிழ் இடைமுகம்' },
+                  ].map((lng) => {
+                    const currentCode = (i18n.resolvedLanguage || i18n.language || 'en').slice(0, 2).toLowerCase();
+                    const isSelected = currentCode === lng.code;
+                    return (
+                      <button
+                        key={lng.code}
+                        type="button"
+                        id={`settings-lang-card-${lng.code}`}
+                        onClick={() => {
+                          i18n.changeLanguage(lng.code);
+                          try {
+                            localStorage.setItem('i18nextLng', lng.code);
+                          } catch (_) {}
+                          if (typeof document !== 'undefined') {
+                            document.documentElement.lang = lng.code;
+                          }
+                        }}
+                        className={`p-4 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between space-y-3 border ${
+                          isSelected
+                            ? 'neu-pressed border-brand-500/60 text-brand-600 dark:text-brand-300 font-bold shadow-lg ring-2 ring-brand-500/30'
+                            : 'neu-button border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-brand-500 dark:hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-base font-black">{lng.native}</span>
+                          {isSelected ? (
+                            <div className="w-6 h-6 rounded-full bg-brand-500/20 text-brand-400 flex items-center justify-center">
+                              <Check className="w-3.5 h-3.5" />
+                            </div>
+                          ) : (
+                            <span className="text-[10px] uppercase font-bold text-slate-400">{lng.code}</span>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-slate-600 dark:text-slate-300">{lng.label}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500">{lng.desc}</p>
+                        </div>
+                        {isSelected && (
+                          <div className="pt-1">
+                            <span className="inline-block px-2 py-0.5 text-[9px] font-black uppercase rounded-lg bg-brand-500/20 text-brand-400 border border-brand-500/40">
+                              ✓ {t('settings.activeLangBadge') || 'Selected'}
+                            </span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>

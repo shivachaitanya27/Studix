@@ -857,7 +857,7 @@ export const Navbar = ({ onOpenSupport, onOpenGuide }) => {
                   }`}
                 >
                   <LayoutDashboard className="w-4 h-4 text-brand-500 dark:text-brand-400" />
-                  <span>Dashboard</span>
+                  <span>{t('nav.dashboard')}</span>
                 </Link>
                 <Link
                   to="/repository"
@@ -869,7 +869,7 @@ export const Navbar = ({ onOpenSupport, onOpenGuide }) => {
                   }`}
                 >
                   <FolderArchive className="w-4 h-4 text-brand-500 dark:text-brand-400" />
-                  <span>Academic Repository</span>
+                  <span>{t('nav.repository')}</span>
                 </Link>
                 <Link
                   to="/ai-assistant"
@@ -881,7 +881,7 @@ export const Navbar = ({ onOpenSupport, onOpenGuide }) => {
                   }`}
                 >
                   <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-                  <span>AI Exam Solver</span>
+                  <span>{t('nav.aiSolver')}</span>
                 </Link>
                 {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') &&
                   (user?.email || '').toLowerCase().trim() === 'vshivachaitanya7@gmail.com' && (
@@ -906,7 +906,7 @@ export const Navbar = ({ onOpenSupport, onOpenGuide }) => {
                   className="w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2.5 neu-button text-brand-600 dark:text-brand-300 hover:text-white"
                 >
                   <Headphones className="w-4 h-4 text-brand-500 dark:text-brand-400" />
-                  <span>Student Support & Chat</span>
+                  <span>{t('nav.support')}</span>
                 </button>
               </div>
 
@@ -915,7 +915,7 @@ export const Navbar = ({ onOpenSupport, onOpenGuide }) => {
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
                     <Globe className="w-3.5 h-3.5 text-accent-cyan" />
-                    <span>Language</span>
+                    <span>{t('nav.language')}</span>
                   </p>
                   <div className="grid grid-cols-3 gap-1.5">
                     {[
@@ -923,16 +923,26 @@ export const Navbar = ({ onOpenSupport, onOpenGuide }) => {
                       { code: 'te', label: 'తెలుగు' },
                       { code: 'ta', label: 'தமிழ்' },
                     ].map((lng) => {
-                      const isSelected = i18n.language === lng.code;
+                      const currentCode = (i18n.resolvedLanguage || i18n.language || 'en').slice(0, 2).toLowerCase();
+                      const isSelected = currentCode === lng.code;
                       return (
                         <button
                           key={lng.code}
                           type="button"
-                          onClick={() => i18n.changeLanguage(lng.code)}
+                          id={`mobile-drawer-lang-${lng.code}`}
+                          onClick={() => {
+                            i18n.changeLanguage(lng.code);
+                            try {
+                              localStorage.setItem('i18nextLng', lng.code);
+                            } catch (_) {}
+                            if (typeof document !== 'undefined') {
+                              document.documentElement.lang = lng.code;
+                            }
+                          }}
                           className={`py-1.5 px-2 rounded-xl text-[11px] font-bold text-center transition-all cursor-pointer ${
                             isSelected
-                              ? 'neu-pressed text-brand-600 dark:text-brand-300 border border-brand-500/40 font-black'
-                              : 'neu-button text-slate-700 dark:text-slate-300'
+                              ? 'neu-pressed text-brand-600 dark:text-brand-300 border border-brand-500/40 font-black shadow-sm'
+                              : 'neu-button text-slate-700 dark:text-slate-300 hover:text-white'
                           }`}
                         >
                           {lng.label}

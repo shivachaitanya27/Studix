@@ -58,8 +58,10 @@ import PaperSolverWizard from '../../components/user/PaperSolverWizard.jsx';
 import VoiceButton from '../../components/common/VoiceButton.jsx';
 import TextToSpeechButton from '../../components/common/TextToSpeechButton.jsx';
 import MarkdownMessage from '../../components/common/MarkdownMessage.jsx';
+import { useTranslation } from 'react-i18next';
 
 export const AIAssistantPage = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -382,7 +384,7 @@ export const AIAssistantPage = () => {
                 >
                   <span className="flex items-center space-x-2">
                     <Plus className="w-4 h-4 text-brand-500 group-hover:scale-110 transition-transform" />
-                    <span>New chat</span>
+                    <span>{t('ai.newChat') || 'New chat'}</span>
                   </span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">⌘N</span>
                 </button>
@@ -489,7 +491,7 @@ export const AIAssistantPage = () => {
                 title="Search campus repository documents"
               >
                 <Search className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">RAG Search</span>
+                <span className="hidden sm:inline">{t('ai.ragQueryBtn') || 'RAG Search'}</span>
               </button>
 
               <button
@@ -499,7 +501,7 @@ export const AIAssistantPage = () => {
                 className="px-2.5 py-1.5 rounded-xl neu-button text-xs font-bold text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 flex items-center space-x-1 cursor-pointer border border-amber-500/30"
               >
                 <Sparkle className="w-3.5 h-3.5 text-amber-500" />
-                <span className="hidden sm:inline">Exam Solver</span>
+                <span className="hidden sm:inline">{t('ai.solverBtn') || 'Exam Solver'}</span>
               </button>
 
               <button
@@ -568,7 +570,7 @@ export const AIAssistantPage = () => {
 
                   <div>
                     <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                      What can I help you learn today?
+                      {t('ai.welcomeHeadline') || 'What can I help you learn today?'}
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
                       Grounded in {college?.code || 'campus'} engineering curriculum, past examination papers, and step-by-step scoring templates.
@@ -791,7 +793,7 @@ export const AIAssistantPage = () => {
                   placeholder={
                     attachedFile
                       ? 'Ask about this question image or press send...'
-                      : 'Ask anything about your syllabus, past papers, or engineering concepts...'
+                      : (t('ai.askPlaceholder') || 'Ask anything about your curriculum, formulas, or exam questions...')
                   }
                   rows={1}
                   className="w-full px-2 py-1.5 bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none resize-none max-h-44 leading-relaxed font-sans"

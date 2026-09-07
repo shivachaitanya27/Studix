@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 
 import { selectCurrentUser, uploadUserAvatar } from '../../redux/authSlice.js';
+import { useTranslation } from 'react-i18next';
 
 import {
   selectSelectedCollege,
@@ -39,6 +40,7 @@ import UploadModal from '../../components/user/UploadModal.jsx';
 import SettingsModal from '../../components/common/SettingsModal.jsx';
 
 export const Dashboard = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -158,10 +160,10 @@ export const Dashboard = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2 text-[10px] sm:text-xs font-bold text-brand-300 uppercase tracking-wider mb-1">
                 <span className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse" />
-                <span>Verified Campus Stream</span>
+                <span>{t('dashboard.stream')}</span>
               </div>
               <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight truncate">
-                Welcome back, {user?.full_name || 'Scholar'}!
+                {t('dashboard.welcome')}, {user?.full_name || 'Scholar'}!
               </h1>
               <div className="text-xs sm:text-sm text-slate-300 mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2.5">
                 <span className="font-bold text-white tracking-tight">
@@ -188,7 +190,7 @@ export const Dashboard = () => {
                     title="Change your Academic Year and Semester"
                   >
                     <Pencil className="w-2.5 h-2.5 text-amber-400" />
-                    <span>Change Semester</span>
+                    <span>{t('dashboard.changeStream')}</span>
                   </button>
                 </div>
               </div>
@@ -204,7 +206,7 @@ export const Dashboard = () => {
             >
               <span className="w-2 h-2 rounded-full bg-accent-emerald" />
               <span className="text-brand-300 font-extrabold">{college?.code || 'DSU'}</span>
-              <span className="text-slate-400 font-medium">Enrolled</span>
+              <span className="text-slate-400 font-medium">{t('dashboard.enrolled')}</span>
             </div>
 
             <button
@@ -218,7 +220,7 @@ export const Dashboard = () => {
               className="px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl neu-button text-slate-800 dark:text-slate-200 hover:text-brand-400 text-xs font-bold flex items-center justify-center space-x-1.5 border border-slate-300 dark:border-slate-700/60 hover:border-brand-500/40 transition-all cursor-pointer truncate"
             >
               <Lock className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400 flex-shrink-0" />
-              <span className="truncate">Settings</span>
+              <span className="truncate">{t('nav.settings')}</span>
             </button>
 
             <button
@@ -228,7 +230,7 @@ export const Dashboard = () => {
               className="col-span-2 sm:col-span-1 px-4 py-2.5 sm:px-5 rounded-xl neu-button text-white text-xs font-bold shadow-glow flex items-center justify-center space-x-2 border-brand-500/40 cursor-pointer"
             >
               <Upload className="w-4 h-4 text-accent-emerald flex-shrink-0" />
-              <span>Upload Resource</span>
+              <span>{t('dashboard.upload')}</span>
             </button>
           </div>
         </div>
@@ -242,7 +244,7 @@ export const Dashboard = () => {
           </div>
           <div className="min-w-0">
             <span className="text-lg sm:text-2xl font-black text-white">Full</span>
-            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Syllabus Subjects</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">{t('dashboard.enrolledSubjects')}</p>
           </div>
         </div>
 
@@ -252,7 +254,7 @@ export const Dashboard = () => {
           </div>
           <div className="min-w-0">
             <span className="text-lg sm:text-2xl font-black text-white">48+</span>
-            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Exam Papers</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">{t('dashboard.examPapersAvailable')}</p>
           </div>
         </div>
 
@@ -262,7 +264,7 @@ export const Dashboard = () => {
           </div>
           <div className="min-w-0">
             <span className="text-lg sm:text-2xl font-black text-white">Gemini 2.0</span>
-            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">AI Exam Assistant</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">{t('dashboard.aiAssistant')}</p>
           </div>
         </div>
 
@@ -272,7 +274,7 @@ export const Dashboard = () => {
           </div>
           <div className="min-w-0">
             <span className="text-lg sm:text-2xl font-black text-white">100%</span>
-            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">Curriculum Match</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium truncate">{t('dashboard.curriculumMatch')}</p>
           </div>
         </div>
       </div>
@@ -289,13 +291,13 @@ export const Dashboard = () => {
             <div className="w-12 h-12 rounded-2xl neu-button text-brand-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <FileText className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">Previous Question Papers</h3>
+            <h3 className="text-lg font-bold text-white mb-2">{t('dashboard.papersTitle')}</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Browse previous Mid-1, Mid-2, and Semester end exam papers with marks distribution and university formats.
+              {t('dashboard.papersDesc')}
             </p>
           </div>
           <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-between text-xs font-bold text-brand-400">
-            <span>Explore Papers Archive</span>
+            <span>{t('dashboard.explorePapers')}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </div>
         </div>
@@ -310,13 +312,13 @@ export const Dashboard = () => {
             <div className="w-12 h-12 rounded-2xl neu-button text-accent-emerald flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <BookMarked className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">Faculty & Student Notes</h3>
+            <h3 className="text-lg font-bold text-white mb-2">{t('dashboard.notesTitle')}</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Unit-wise notes, handwritten topper summaries, lab manuals, and syllabus reference material.
+              {t('dashboard.notesDesc')}
             </p>
           </div>
           <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-between text-xs font-bold text-accent-emerald">
-            <span>Access Study Notes</span>
+            <span>{t('dashboard.accessNotes')}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </div>
         </div>
@@ -331,13 +333,13 @@ export const Dashboard = () => {
             <div className="w-12 h-12 rounded-2xl neu-button text-accent-violet flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Sparkles className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">Open Academic Repository</h3>
+            <h3 className="text-lg font-bold text-white mb-2">{t('dashboard.repoTitle')}</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Full multi-filter repository with live SHA-256 duplicate detection, bookmarks, and Gemini AI validation.
+              {t('dashboard.repoDesc')}
             </p>
           </div>
           <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-between text-xs font-bold text-accent-violet">
-            <span>Open Shared Archive</span>
+            <span>{t('dashboard.openRepo')}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </div>
         </div>

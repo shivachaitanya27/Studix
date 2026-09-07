@@ -42,10 +42,12 @@ import {
   selectSubjects,
 } from '../../redux/academicSlice.js';
 import { selectCurrentUser } from '../../redux/authSlice.js';
+import { useTranslation } from 'react-i18next';
 import ResourceCard from '../../components/user/ResourceCard.jsx';
 import UploadModal from '../../components/user/UploadModal.jsx';
 
 export const RepositoryPage = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -130,31 +132,31 @@ export const RepositoryPage = () => {
 
   // Tab definitions
   const tabs = [
-    { id: 'ALL', label: 'All Resources', count: resourcesList.length },
+    { id: 'ALL', label: t('repository.tabs.all'), count: resourcesList.length },
     {
       id: 'PAPERS',
-      label: 'Previous Papers',
+      label: t('repository.tabs.papers'),
       count: resourcesList.filter((r) =>
         ['SEMESTER_PAPER', 'PREVIOUS_PAPER'].includes(r.resource_type)
       ).length,
     },
     {
       id: 'MID',
-      label: 'Mid-1 / Mid-2',
+      label: t('repository.tabs.mid'),
       count: resourcesList.filter((r) =>
         ['MID_1', 'MID_2', 'INTERNAL_PAPER'].includes(r.resource_type)
       ).length,
     },
     {
       id: 'MODEL',
-      label: 'Model Papers',
+      label: t('repository.tabs.model'),
       count: resourcesList.filter((r) =>
         ['MODEL_PAPER'].includes(r.resource_type)
       ).length,
     },
     {
       id: 'QUESTION_BANK',
-      label: 'Question Bank',
+      label: t('repository.tabs.questionBank') || 'Question Bank',
       count: resourcesList.filter(
         (r) =>
           ['QUESTION_BANK', 'QB'].includes(r.resource_type) ||
@@ -165,7 +167,7 @@ export const RepositoryPage = () => {
     },
     {
       id: 'NOTES',
-      label: 'Study Notes',
+      label: t('repository.tabs.notes'),
       count: resourcesList.filter((r) =>
         ['UNIT_NOTES', 'SUBJECT_NOTES', 'FACULTY_NOTES', 'STUDENT_NOTES'].includes(
           r.resource_type
@@ -174,7 +176,7 @@ export const RepositoryPage = () => {
     },
     {
       id: 'MATERIALS',
-      label: 'Lab & PPTs',
+      label: t('repository.tabs.materials'),
       count: resourcesList.filter((r) =>
         ['LAB_MANUAL', 'PPT', 'ASSIGNMENT', 'REFERENCE_MATERIAL'].includes(
           r.resource_type
@@ -183,7 +185,7 @@ export const RepositoryPage = () => {
     },
     {
       id: 'BOOKMARKS',
-      label: 'My Bookmarks',
+      label: t('repository.tabs.bookmarks'),
       count: bookmarksList.length,
     },
   ];
@@ -289,13 +291,13 @@ export const RepositoryPage = () => {
         <div>
           <div className="flex items-center space-x-2 text-xs font-bold text-brand-300 uppercase tracking-wider mb-1.5">
             <Sparkles className="w-4 h-4 text-brand-400" />
-            <span>Multi-Tenant Resource Archive</span>
+            <span>{t('repository.subtitle')}</span>
           </div>
           <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight">
-            Academic Repository
+            {t('repository.title')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1 flex flex-wrap items-center gap-2">
-            <span>Filtered for:</span>
+            <span>{t('repository.filteredFor')}</span>
             <span className="font-bold text-white">
               {isAdmin && selectedCollegeFilter !== 'ALL'
                 ? collegesList.find((c) => c.id === selectedCollegeFilter)?.code || 'Campus'
@@ -318,7 +320,7 @@ export const RepositoryPage = () => {
           <div className="px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl neu-pressed text-xs font-semibold text-slate-300 flex items-center space-x-2 select-none">
             <span className="w-2 h-2 rounded-full bg-accent-emerald" />
             <span className="font-extrabold text-brand-300">{college?.code || 'Campus'}</span>
-            <span className="text-slate-400 font-medium">Campus Archive</span>
+            <span className="text-slate-400 font-medium">{t('repository.campusArchive')}</span>
           </div>
 
           <button
@@ -327,7 +329,7 @@ export const RepositoryPage = () => {
             className="flex-1 sm:flex-initial px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl neu-button text-xs font-bold text-white shadow-glow flex items-center justify-center space-x-2 border-brand-500/40 cursor-pointer"
           >
             <Upload className="w-4 h-4 text-accent-emerald" />
-            <span>Upload Document</span>
+            <span>{t('repository.uploadDoc')}</span>
           </button>
         </div>
       </div>
@@ -446,7 +448,7 @@ export const RepositoryPage = () => {
             id="repository-search-input"
             value={searchQuery}
             onChange={(e) => dispatch(setSearchQuery(e.target.value))}
-            placeholder="Search paper title, code, or keyword..."
+            placeholder={t('repository.searchPlaceholder')}
             autoComplete="off"
             autoCorrect="off"
             spellCheck="false"
@@ -457,7 +459,7 @@ export const RepositoryPage = () => {
               type="button"
               onClick={() => dispatch(setSearchQuery(''))}
               className="absolute right-3 top-2.5 p-1 rounded-lg neu-button text-slate-400 hover:text-white cursor-pointer"
-              title="Clear search"
+              title={t('repository.clearSearch') || 'Clear search'}
             >
               <X className="w-3 h-3" />
             </button>
@@ -471,7 +473,7 @@ export const RepositoryPage = () => {
             onChange={(e) => dispatch(setSelectedSubjectFilter(e.target.value))}
             className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-200 focus:outline-none"
           >
-            <option value="">All Curriculum Subjects</option>
+            <option value="">{t('repository.allCurriculum')}</option>
             {subjects.map((s) => (
               <option key={s.id} value={s.id}>
                 [{s.code}] {s.name}
@@ -487,7 +489,7 @@ export const RepositoryPage = () => {
             onChange={(e) => setSelectedSemesterFilter(e.target.value)}
             className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-200 focus:outline-none"
           >
-            <option value="">All Semesters (1 to 8)</option>
+            <option value="">{t('repository.allSemesters')}</option>
             {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
               <option key={sem} value={sem}>
                 Semester {sem}
@@ -503,7 +505,7 @@ export const RepositoryPage = () => {
             onChange={(e) => setSelectedTypeFilter(e.target.value)}
             className="w-full px-3.5 py-2.5 rounded-xl neu-pressed text-xs text-slate-200 focus:outline-none"
           >
-            <option value="">All Document Types</option>
+            <option value="">{t('repository.allDocTypes')}</option>
             <optgroup label="Question Papers">
               <option value="SEMESTER_PAPER">Semester Final Paper</option>
               <option value="PREVIOUS_PAPER">Previous Exam Paper</option>
